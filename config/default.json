@@ -1,0 +1,3 @@
+{
+    "mongoURI":"mongodb+srv://dbLibrary:12345@librarymanagement.uncg4.mongodb.net/libraryDB?retryWrites=true&w=majority"
+}
