@@ -9,5 +9,6 @@ router.post("/register", accountController.register);
 router.post("/login-google", accountController.loginGoogle);
 // Sign up Google: /accounts/register-google
 router.post("/register-google", accountController.registerGoogle);
+router.put("/update/:accountId", accountController.editAccount);
 
 module.exports = router;

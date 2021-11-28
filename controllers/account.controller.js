@@ -115,8 +115,43 @@ exports.getAccount = async function (req, res) {
         }
 
         const account = await Account.findOne({ _id: accountId });
-        res.json(account);
+        return res.json(account);
     } catch (error) {
         return next(error);
+    }
+};
+
+exports.editAccount = async function (req, res) {
+    const loggedInAccount = res.locals.account;
+
+    if (loggedInAccount._id.toString() !== req.params.accountId) {
+        return res.status(403).json({
+            error: "You are not allowed to update info of other users",
+        });
+    }
+
+    var { username, avt, fullname, phone, avt, dob, gender } = req.body;
+
+    try {
+        const existingUsername = await Account.findOne({ user_name: username });
+
+        if (existingUsername) {
+            return res
+                .status(400)
+                .json({ message: "Username is already existed" });
+        }
+        loggedInAccount.user_name = username;
+        loggedInAccount.fullname = fullname;
+        loggedInAccount.avt = avt;
+        loggedInAccount.phone = phone;
+        loggedInAccount.dob = dob;
+        loggedInAccount.gender = gender;
+
+        await loggedInAccount.save();
+
+        return res.status(200).json(loggedInAccount);
+    } catch (err) {
+        res.status(500).json({ message: "Something went wrong" });
+        console.log(err);
     }
 };

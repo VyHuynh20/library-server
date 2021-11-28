@@ -4,11 +4,11 @@ const Book = require("../models/Book");
 const removeVie = require("../handlers/removeVie");
 
 exports.addBooktoBookcase = async function (req, res) {
-    const userId = req.account.local.userId;
+    const user = req.account.locals.account;
     const bookId = req.body;
     try {
         const existingBook = await Bookcase.findOne({
-            user: userId,
+            user: user._id,
             book: bookId,
         });
         if (existingBook) {
@@ -29,9 +29,9 @@ exports.addBooktoBookcase = async function (req, res) {
 };
 
 exports.detailBookcase = async function (req, res) {
-    const userId = req.account.local.userId;
+    const user = req.account.locals.account;
 
-    Bookcase.findOne({ user: userId }, ["user", "book", "progress"])
+    Bookcase.findOne({ user: user._id }, ["user", "book", "progress"])
         .populate("book", ["name", "authors", "tags"])
         .then((bookcase) => {
             if (bookcase) {
@@ -47,11 +47,11 @@ exports.detailBookcase = async function (req, res) {
 };
 
 exports.removeBook = async function (req, res) {
-    const userId = req.account.local.userId;
+    const user = req.account.locals.account;
     const bookId = req.body;
     try {
         const bookcase = await Bookcase.findByIdAndDelete({
-            user: userId,
+            user: user._id,
             book: bookId,
         });
         if (bookcase) {
