@@ -1,12 +1,11 @@
 const jwt = require("jsonwebtoken");
 const Account = require("../models/Account");
-const responsehandler = require("../helpers/respone-handler");
 const { validationResult } = require("express-validator");
 
 const authUser = async (req, res, next) => {
     const err = validationResult(req);
     if (!err.isEmpty()) {
-        return responsehandler(res, 400, err.array()[0].msg, {}, null);
+        return res.status(400).json(err);
     }
     try {
         const authHeader = req.header("authorization");
@@ -25,11 +24,11 @@ const authUser = async (req, res, next) => {
             next();
         } else {
             const message = "Unauthorized";
-            return responsehandler(res, 403, message, null, null);
+            return res.status(400).json(message);
         }
     } catch (err) {
         const message = "Unauthorized";
-        return responsehandler(res, 403, message, null, null);
+        return res.status(403).json(message);
     }
 };
 module.exports = authUser;

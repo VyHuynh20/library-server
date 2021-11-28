@@ -1,13 +1,12 @@
 const mongoose = require("mongoose");
 
 const AccountSchema = mongoose.Schema({
-    userName: {
+    nickname: {
         type: String,
-        unique: true,
         trim: true,
     },
     password: { type: String },
-    fullName: { type: String, required: true },
+    name: { type: String, required: true },
     email: {
         type: String,
         required: true,
@@ -16,14 +15,14 @@ const AccountSchema = mongoose.Schema({
     },
     phoneNumber: { type: String, minLength: 10, maxLength: 11 },
 
-    avt: { type: String },
-    avtGoogle: { type: String },
+    avatar: { type: String },
+    avatarGoogle: { type: String },
 
     faculty: { type: String },
 
     dob: { type: Date },
     gender: { type: String },
-    point: { type: Number, default: 0 },
+    hoa: { type: Number, default: 0 },
 
     role: { type: String, default: "User" },
     is_banned: {
