@@ -17,6 +17,9 @@ const BookcaseSchema = mongoose.Schema({
         enum: [0, 1, 2], // new - in progress - done
         default: 0,
     },
+    background: {
+        type: String,
+    },
 });
 
 BookcaseSchema.set("timestamps", true);

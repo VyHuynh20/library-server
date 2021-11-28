@@ -1,21 +1,25 @@
 const mongoose = require("mongoose");
 
 const AccountSchema = mongoose.Schema({
-    user_name: {
+    userName: {
         type: String,
         unique: true,
         trim: true,
     },
-    password: { type: String, required: true },
-    fullname: { type: String, required: true },
+    password: { type: String },
+    fullName: { type: String, required: true },
     email: {
         type: String,
         required: true,
         unique: true,
         lowercase: true,
     },
-    phonenumber: { type: String, minLength: 10, maxLength: 11 },
+    phoneNumber: { type: String, minLength: 10, maxLength: 11 },
+
     avt: { type: String },
+    avtGoogle: { type: String },
+
+    faculty: { type: String },
 
     dob: { type: Date },
     gender: { type: String },
@@ -27,13 +31,6 @@ const AccountSchema = mongoose.Schema({
         required: true,
         enum: [1, 0],
         default: 0,
-    },
-
-    refreshToken: {
-        type: String,
-        minLength: 50,
-        maxLength: 50,
-        default: null,
     },
 });
 

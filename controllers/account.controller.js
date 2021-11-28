@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const Account = require("../models/Account");
 
 exports.register = async function (req, res) {
-    var { username, email, password, fullname, phone, avt, dob, gender } =
+    var { username, email, password, fullName, phone, avt, dob, gender } =
         req.body;
 
     try {
@@ -20,10 +20,10 @@ exports.register = async function (req, res) {
         const hashedPassword = await bcrypt.hash(password, 12);
 
         const account = new Account({
-            user_name: username,
+            userName: username,
             email: email,
             password: hashedPassword,
-            fullname: fullname,
+            fullName: fullName,
             phone: phone,
             avt: avt,
             dob: dob,
@@ -40,6 +40,37 @@ exports.register = async function (req, res) {
 };
 
 exports.loginGoogle = async function (req, res) {
+    const { tokenId } = req.body;
+    client
+        .verifyIdToken({
+            idToken: tokenId,
+            audience:
+                "168686532840-8f6as6ppblu170r1v0f337cvpq29l43f.apps.googleusercontent.com",
+        })
+        .then((res) => {
+            const { email, name, picture } = res.payload;
+            console.log(res.payload);
+
+            const existingAccount = await Account.findOne({ email: email });
+
+            // Register account
+            if (!existingAccount) {
+                const account = new Account({
+                    email: email,
+                    fullName: name,
+                    avtGoogle: picture,
+                    avt: picture,
+                });
+
+                await account.save();
+
+                res.status(200).json(account);
+            }
+
+            // Log In account
+            res.status(200).json(getAccount(existingAccount));
+        });
+    /*
     var { email, password } = req.body;
     try {
         const existingAccount = await Account.findOne({ email: email });
@@ -74,6 +105,7 @@ exports.loginGoogle = async function (req, res) {
         res.status(500).json({ message: "Something went wrong" });
         console.log(error);
     }
+    */
 };
 
 exports.registerGoogle = async function (req, res) {
@@ -89,10 +121,10 @@ exports.registerGoogle = async function (req, res) {
         const username = Math.floor(Math.random() * 100 + 1);
 
         const account = new Account({
-            user_name: `${firstname}${username}`,
+            userName: `${firstname}${username}`,
             email: email,
             password: hashedPassword,
-            fullname: `${firstname} ${lastname}`,
+            fullName: `${firstname} ${lastname}`,
         });
 
         await account.save();
@@ -104,44 +136,38 @@ exports.registerGoogle = async function (req, res) {
     }
 };
 
-exports.getAccount = async function (req, res) {
+exports.getAccountById = function (account) {
     try {
-        const loggedInAccount = res.locals.account;
-        const accountId = req.params.accountId;
-        if (loggedInAccount._id.toString() !== accountId) {
-            return res.status(403).json({
-                error: "You are not allowed!",
-            });
-        }
+        const accountId = account._id;
 
         const account = await Account.findOne({ _id: accountId });
-        return res.json(account);
+
+        return account;
     } catch (error) {
-        return next(error);
+        return error;
     }
 };
 
 exports.editAccount = async function (req, res) {
-    const loggedInAccount = res.locals.account;
-
-    if (loggedInAccount._id.toString() !== req.params.accountId) {
-        return res.status(403).json({
-            error: "You are not allowed to update info of other users",
-        });
-    }
-
-    var { username, avt, fullname, phone, avt, dob, gender } = req.body;
-
+    const { username, avt, fullName, phone, dob, gender } = req.body;
     try {
-        const existingUsername = await Account.findOne({ user_name: username });
+        const loggedInAccount = res.locals.account;
 
+        if (loggedInAccount._id !== req.params.accountId) {
+            return res.status(403).json({
+                error: "You are not allowed to update info of other users",
+            });
+        }
+
+        const existingUsername = await Account.findOne({ userName: username });
         if (existingUsername) {
             return res
                 .status(400)
                 .json({ message: "Username is already existed" });
         }
-        loggedInAccount.user_name = username;
-        loggedInAccount.fullname = fullname;
+
+        loggedInAccount.userName = username;
+        loggedInAccount.fullName = fullName;
         loggedInAccount.avt = avt;
         loggedInAccount.phone = phone;
         loggedInAccount.dob = dob;

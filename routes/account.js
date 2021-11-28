@@ -1,4 +1,5 @@
 const accountController = require("../controllers/account.controller");
+const authUser = require("../middlewares/authUser");
 
 const express = require("express");
 const router = express.Router();
@@ -9,6 +10,7 @@ router.post("/register", accountController.register);
 router.post("/login-google", accountController.loginGoogle);
 // Sign up Google: /accounts/register-google
 router.post("/register-google", accountController.registerGoogle);
-router.put("/update/:accountId", accountController.editAccount);
+
+router.put("/update/:accountId", authUser, accountController.editAccount);
 
 module.exports = router;
