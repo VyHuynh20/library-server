@@ -9,6 +9,8 @@ const NoteSchema = mongoose.Schema({
         ref: "Book",
     },
     note: { type: String },
+    noteNoSign: { type: String },
+
     page: { type: Number },
     status: {
         type: Number,

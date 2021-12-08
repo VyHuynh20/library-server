@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
+
 const BookSchema = mongoose.Schema({
     name: {
         type: String,
@@ -6,10 +8,13 @@ const BookSchema = mongoose.Schema({
         trim: true,
     },
 
-    namenosign: {
+    nameNoSign: {
         type: String,
     },
-    authors: [{ type: String }],
+
+    author: { type: String },
+    authorNoSign: { type: String },
+
     tags: [
         {
             type: mongoose.SchemaTypes.ObjectId,
@@ -18,6 +23,7 @@ const BookSchema = mongoose.Schema({
     ],
 
     description: { type: String },
+    descriptionNoSign: { type: String },
     image: { type: String },
     is_active: {
         type: Number,
@@ -27,15 +33,29 @@ const BookSchema = mongoose.Schema({
     },
 
     quote: [{ type: String, required: true }],
+    price: { type: Number, default: 0 },
 
     link: { type: String, required: true },
     linkIntro: { type: String, required: true },
 
     totalLike: { type: Number, default: 0 },
     totalDislike: { type: Number, default: 0 },
+    liked: [
+        {
+            type: mongoose.SchemaTypes.ObjectId,
+            ref: "Account",
+        },
+    ],
+    disliked: [
+        {
+            type: mongoose.SchemaTypes.ObjectId,
+            ref: "Account",
+        },
+    ],
     totalRead: { type: Number, default: 0 },
 });
 
 BookSchema.set("timestamps", true);
+BookSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("Book", BookSchema);

@@ -4,6 +4,9 @@ const BookcaseSchema = mongoose.Schema({
         type: mongoose.SchemaTypes.ObjectId,
         ref: "Account",
     },
+    name: {
+        type: String,
+    },
     book: {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "Book",
@@ -19,6 +22,9 @@ const BookcaseSchema = mongoose.Schema({
     },
     background: {
         type: String,
+    },
+    currentPage: {
+        type: Number,
     },
 });
 

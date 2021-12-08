@@ -18,13 +18,13 @@ connectDB();
 
 // Init Middleware
 app.use(express.json({ extended: false }));
-app.use(express.urlencoded()); //Parse URL-encoded bodies
-
-//app.use(upload.single("file"));
+app.use(express.urlencoded({ extended: true })); //Parse URL-encoded bodies
 
 // Import Routes
 const accountRoute = require("./routes/account");
 const bookRoute = require("./routes/book");
+const tagRoute = require("./routes/tag");
+const categoryRoute = require("./routes/category");
 
 // Routes
 app.get("/", (req, res) => {
@@ -32,6 +32,8 @@ app.get("/", (req, res) => {
 });
 app.use("/accounts", accountRoute);
 app.use("/books", bookRoute);
+app.use("/tags", tagRoute);
+app.use("/categories", categoryRoute);
 
 // Set up environment
 app.listen(process.env.PORT, () => {

@@ -5,6 +5,7 @@ const FlaskcardSchema = mongoose.Schema({
         ref: "Account",
     },
     name: { type: String },
+    nameNoSign: { type: String },
     status: {
         type: Number,
         enum: [0, 1, 2], // deleted - active - edited

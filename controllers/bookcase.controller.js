@@ -31,7 +31,13 @@ exports.addBooktoBookcase = async function (req, res) {
 exports.detailBookcase = async function (req, res) {
     const user = req.account.locals.account;
 
-    Bookcase.findOne({ user: user._id }, ["user", "book", "progress"])
+    Bookcase.findOne({ user: user._id }, [
+        "user",
+        "book",
+        "name",
+        "background",
+        "progress",
+    ])
         .populate("book", ["name", "authors", "tags"])
         .then((bookcase) => {
             if (bookcase) {

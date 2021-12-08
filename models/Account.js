@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const AccountSchema = mongoose.Schema({
     nickname: {
@@ -35,5 +36,6 @@ const AccountSchema = mongoose.Schema({
 
 // createdAt + updatedAt
 AccountSchema.set("timestamps", true);
+AccountSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model("Account", AccountSchema);

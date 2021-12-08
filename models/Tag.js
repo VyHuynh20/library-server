@@ -7,6 +7,10 @@ const TagSchema = mongoose.Schema({
         trim: true,
     },
     description: { type: String },
+    category: {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "Category",
+    },
     is_active: {
         type: Number,
         required: true,
