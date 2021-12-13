@@ -5,6 +5,7 @@ const AccountSchema = mongoose.Schema({
     nickname: {
         type: String,
         trim: true,
+        default: "",
     },
     password: { type: String },
     name: { type: String, required: true },
@@ -14,22 +15,15 @@ const AccountSchema = mongoose.Schema({
         unique: true,
         lowercase: true,
     },
-    phoneNumber: { type: String, minLength: 10, maxLength: 11 },
+    phoneNumber: { type: String, minLength: 10, maxLength: 11, default: "" },
 
-    avatar: { type: String },
-    avatarGoogle: { type: String },
+    avatar: { type: String, default: "" },
+    avatarGoogle: { type: String, default: "" },
 
-    faculty: { type: String },
+    faculty: { type: String, default: "FIT" },
 
-    bookCaseName: {
-        type: String,
-    },
-    background: {
-        type: String,
-    },
-
-    dob: { type: Date },
-    gender: { type: String },
+    dob: { type: Date, default: Date.now() },
+    gender: { type: String, default: "male" },
     hoa: { type: Number, default: 0 },
 
     role: { type: String, default: "User" },

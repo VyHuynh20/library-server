@@ -7,9 +7,11 @@ const router = express.Router();
 // Log in Google: /accounts/login-google
 router.post("/login-google", accountController.loginGoogle);
 
+//NOTE: get account info
 router.get("/", authUser, accountController.getAccountInfo);
 
-router.put("/update/:accountId", authUser, accountController.editAccount);
+//NOTE: update account info
+router.put("/", authUser, accountController.editAccount);
 
 router.get("/resign/", authUser, accountController.reSign);
 
