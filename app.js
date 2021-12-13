@@ -26,9 +26,18 @@ const bookRoute = require("./routes/book");
 const tagRoute = require("./routes/tag");
 const categoryRoute = require("./routes/category");
 
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+});
+
 // Routes
 app.get("/", (req, res) => {
-    res.send("Library Management");
+  res.send("Library Management");
 });
 app.use("/accounts", accountRoute);
 app.use("/books", bookRoute);
@@ -37,5 +46,5 @@ app.use("/categories", categoryRoute);
 
 // Set up environment
 app.listen(process.env.PORT, () => {
-    console.log(`Server is running on http://localhost:${process.env.PORT}`);
+  console.log(`Server is running on http://localhost:${process.env.PORT}`);
 });

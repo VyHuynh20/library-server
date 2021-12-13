@@ -94,7 +94,9 @@ exports.getAccountInfo = async function (req, res) {
 };
 
 exports.editAccount = async function (req, res) {
-  const { username, avt, fullName, phone, dob, gender } = req.body;
+  const { faculty, avatar, nickname, fullName, phoneNumber, dob, gender } =
+    req.body;
+  console.log({ bodyReq: req.body });
   try {
     const loggedInAccount = res.locals.account;
 
@@ -104,15 +106,11 @@ exports.editAccount = async function (req, res) {
       });
     }
 
-    const existingUsername = Account.findOne({ userName: username });
-    if (existingUsername) {
-      return res.status(400).json({ message: "Username is already existed" });
-    }
-
-    loggedInAccount.userName = username;
+    loggedInAccount.nickname = nickname;
+    loggedInAccount.faculty = faculty;
     loggedInAccount.fullName = fullName;
-    loggedInAccount.avt = avt;
-    loggedInAccount.phone = phone;
+    loggedInAccount.avatar = avatar;
+    loggedInAccount.phoneNumber = phoneNumber;
     loggedInAccount.dob = dob;
     loggedInAccount.gender = gender;
 
