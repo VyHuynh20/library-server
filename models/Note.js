@@ -14,7 +14,7 @@ const NoteSchema = mongoose.Schema({
     page: { type: Number },
     status: {
         type: Number,
-        enum: [0, 1, 2], // deleted - active - edited
+        enum: [0, 1, 2], // delete - open - close
         default: 1,
     },
 });

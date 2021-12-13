@@ -4,9 +4,6 @@ const BookcaseSchema = mongoose.Schema({
         type: mongoose.SchemaTypes.ObjectId,
         ref: "Account",
     },
-    name: {
-        type: String,
-    },
     book: {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "Book",
@@ -20,9 +17,6 @@ const BookcaseSchema = mongoose.Schema({
         enum: [0, 1, 2], // new - in progress - done
         default: 0,
     },
-    background: {
-        type: String,
-    },
     currentPage: {
         type: Number,
     },
@@ -30,4 +24,4 @@ const BookcaseSchema = mongoose.Schema({
 
 BookcaseSchema.set("timestamps", true);
 
-module.exports = mongoose.model("Bookcase", BookcaseSchema);
+module.exports = mongoose.model("BookInBookcase", BookcaseSchema);

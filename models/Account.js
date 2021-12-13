@@ -21,6 +21,13 @@ const AccountSchema = mongoose.Schema({
 
     faculty: { type: String },
 
+    bookCaseName: {
+        type: String,
+    },
+    background: {
+        type: String,
+    },
+
     dob: { type: Date },
     gender: { type: String },
     hoa: { type: Number, default: 0 },

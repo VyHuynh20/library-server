@@ -25,6 +25,7 @@ const accountRoute = require("./routes/account");
 const bookRoute = require("./routes/book");
 const tagRoute = require("./routes/tag");
 const categoryRoute = require("./routes/category");
+const bookcaseRoute = require("./routes/bookcase");
 
 // Routes
 app.get("/", (req, res) => {
@@ -34,6 +35,7 @@ app.use("/accounts", accountRoute);
 app.use("/books", bookRoute);
 app.use("/tags", tagRoute);
 app.use("/categories", categoryRoute);
+app.use("/bookcases", bookcaseRoute);
 
 // Set up environment
 app.listen(process.env.PORT, () => {

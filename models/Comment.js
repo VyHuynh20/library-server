@@ -9,6 +9,28 @@ const CommentSchema = mongoose.Schema({
         ref: "Book",
     },
     comment: { type: String },
+    totalLike: { type: Number, default: 0 },
+    totalDislike: { type: Number, default: 0 },
+    liked: [
+        {
+            type: mongoose.SchemaTypes.ObjectId,
+            ref: "Account",
+        },
+    ],
+    disliked: [
+        {
+            type: mongoose.SchemaTypes.ObjectId,
+            ref: "Account",
+        },
+    ],
+
+    replies: [
+        {
+            type: mongoose.SchemaTypes.ObjectId,
+            ref: "Reply",
+        },
+    ],
+
     status: {
         type: Number,
         enum: [0, 1, 2], // deleted - active - edited

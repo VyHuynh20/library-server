@@ -1,4 +1,4 @@
-const Bookcase = require("../models/Bookcase");
+const Bookcase = require("../models/BookInBookcase");
 const Book = require("../models/Book");
 
 const removeVie = require("../handlers/removeVie");
@@ -28,17 +28,11 @@ exports.addBooktoBookcase = async function (req, res) {
     }
 };
 
-exports.detailBookcase = async function (req, res) {
-    const user = req.account.locals.account;
+exports.listBook = async function (req, res) {
+    const user = req.locals.account;
 
-    Bookcase.findOne({ user: user._id }, [
-        "user",
-        "book",
-        "name",
-        "background",
-        "progress",
-    ])
-        .populate("book", ["name", "authors", "tags"])
+    Bookcase.find({ user: user._id }, ["user", "book", "progress"])
+        .populate("book", ["name", "authors", "tags", "image"])
         .then((bookcase) => {
             if (bookcase) {
                 res.json(bookcase);
