@@ -14,6 +14,6 @@ router.get("/bookByTag/:tagId", bookController.getBookbyTag);
 
 router.get("/getComment/:bookId", bookController.getComment);
 
-router.post("/search/:bookId", bookController.search);
+router.post("/search/", bookController.search);
 
 module.exports = router;
