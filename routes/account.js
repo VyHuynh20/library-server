@@ -15,4 +15,6 @@ router.put("/", authUser, accountController.editAccount);
 
 router.get("/resign/", authUser, accountController.reSign);
 
+router.get("/logout/", accountController.logout);
+
 module.exports = router;

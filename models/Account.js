@@ -15,7 +15,6 @@ const AccountSchema = mongoose.Schema({
         unique: true,
         lowercase: true,
     },
-    phoneNumber: { type: String, minLength: 10, maxLength: 11, default: "" },
 
     avatar: { type: String, default: "" },
     avatarGoogle: { type: String, default: "" },

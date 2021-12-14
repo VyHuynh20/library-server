@@ -61,15 +61,13 @@ const authUser = async (req, res, next) => {
 
 const checkUser = async (req) => {
   try {
-    const authHeader = req.header("authorization");
-    if (!authHeader.startsWith("Bearer ")) {
-      return;
-    }
-    const token = authHeader.substring(7, authHeader.length);
-    const data = jwt.verify(token, process.env.JWT_SECRET);
-    const account = await Account.findOne({ _id: data._id });
-    if (account) {
-      return account;
+    const token = req.cookies.access_token;
+    if (token) {
+      const data = jwt.verify(token, process.env.JWT_SECRET);
+      const account = await Account.findOne({ _id: data._id });
+      if (account) {
+        return account;
+      }
     }
     return;
   } catch (err) {
