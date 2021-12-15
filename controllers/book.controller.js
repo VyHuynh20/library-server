@@ -68,8 +68,7 @@ exports.detailBook = async function (req, res) {
             "linkIntro",
         ]).populate("tags", ["_id", "name"]);
 
-        authUser();
-        const account = res.locals.account;
+        let account = await checkUser(req);
 
         if (account) {
             if (book.liked && book.liked.includes(account._id)) {

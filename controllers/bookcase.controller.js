@@ -2,6 +2,7 @@ const Bookcase = require("../models/BookInBookcase");
 const Book = require("../models/Book");
 
 const removeVie = require("../handlers/removeVie");
+const Note = require("../models/Note");
 
 exports.addBooktoBookcase = async function (req, res) {
     const user = req.account.locals.account;
@@ -17,7 +18,7 @@ exports.addBooktoBookcase = async function (req, res) {
                 .json({ error: "This book is already in your bookcase" });
         }
         const bookcase = new Bookcase({
-            user: userId,
+            user: user._id,
             book: bookId,
         });
         await bookcase.save();
@@ -28,7 +29,7 @@ exports.addBooktoBookcase = async function (req, res) {
     }
 };
 
-exports.listBook = async function (req, res) {
+exports.listBookinBookcase = async function (req, res) {
     const user = req.locals.account;
 
     Bookcase.find({ user: user._id }, ["user", "book", "progress"])
