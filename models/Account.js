@@ -15,7 +15,6 @@ const AccountSchema = mongoose.Schema({
         unique: true,
         lowercase: true,
     },
-    phoneNumber: { type: String, minLength: 10, maxLength: 11, default: "" },
 
     avatar: { type: String, default: "" },
     avatarGoogle: { type: String, default: "" },
@@ -33,6 +32,20 @@ const AccountSchema = mongoose.Schema({
         enum: [1, 0],
         default: 0,
     },
+
+    listBooks: [
+        {
+            type: mongoose.SchemaTypes.ObjectId,
+            ref: "Book",
+        },
+    ],
+
+    listNotes: [
+        {
+            type: mongoose.SchemaTypes.ObjectId,
+            ref: "Note",
+        },
+    ],
 });
 
 // createdAt + updatedAt

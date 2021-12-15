@@ -20,4 +20,4 @@ const ReactSchema = mongoose.Schema({
 // createdAt + updatedAt
 ReactSchema.set("timestamps", true);
 
-module.exports = mongoose.model("Account", ReactSchema);
+module.exports = mongoose.model("React", ReactSchema);

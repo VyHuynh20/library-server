@@ -9,9 +9,9 @@ const CategorySchema = mongoose.Schema({
         type: String,
         trim: true,
     },
-    thumbnail: { type: String },
-    quote: { type: String },
-    color: { type: String },
+    thumbnail: { type: String, default: "" },
+    quote: { type: String, default: "" },
+    color: { type: String, default: "orange" },
     is_active: {
         type: Number,
         required: true,

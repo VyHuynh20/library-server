@@ -6,7 +6,7 @@ const TagSchema = mongoose.Schema({
         unique: true,
         trim: true,
     },
-    description: { type: String },
+    description: { type: String, default: "" },
     category: {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "Category",
