@@ -7,13 +7,11 @@ const ReplySchema = mongoose.Schema({
         required: true,
         trim: true,
     },
-
-    comment: {
+    content: {
         type: String,
         required: true,
     },
-
-    comment_id: {
+    commentId: {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "Comment",
     },

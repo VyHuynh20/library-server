@@ -17,4 +17,11 @@ router.get("/resign/", authUser, accountController.reSign);
 
 router.get("/logout/", accountController.logout);
 
+//NOTE: get user info for forum by bookId
+router.get(
+  "/getUserInfoForForum/:bookId",
+  authUser,
+  accountController.getUserInfoForForum
+);
+
 module.exports = router;
