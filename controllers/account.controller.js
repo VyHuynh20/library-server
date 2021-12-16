@@ -32,7 +32,7 @@ exports.loginGoogle = async function (req, res) {
                 process.env.JWT_SECRET,
                 { expiresIn: "24h" }
               );
-              const { _id, name, email } = account;
+              const { _id, name, email, avatar } = account;
 
               res.cookie("access_token", token, {
                 maxAge: 24 * 60 * 60 * 100,
@@ -41,14 +41,14 @@ exports.loginGoogle = async function (req, res) {
               });
 
               res.status(200).json({
-                user: { _id, name, email },
+                user: { _id, name, email, avatar },
               });
             } else {
               const newAccount = new Account({
                 email: email,
                 fullName: name,
-                avtGoogle: picture,
-                avt: picture,
+                avatarGoogle: picture,
+                avatar: picture,
               });
               console.log(newAccount);
 
@@ -65,7 +65,7 @@ exports.loginGoogle = async function (req, res) {
                   process.env.JWT_SECRET,
                   { expiresIn: "24h" }
                 );
-                const { _id, name, email } = newAccount;
+                const { _id, name, email, avatar } = newAccount;
 
                 res.cookie("access_token", token, {
                   maxAge: 24 * 60 * 60 * 100,
@@ -74,7 +74,7 @@ exports.loginGoogle = async function (req, res) {
                 });
                 console.log({ res });
                 res.status(200).json({
-                  user: { _id, name, email },
+                  user: { _id, name, email, avatar },
                 });
               });
             }
@@ -149,4 +149,17 @@ exports.logout = async function (req, res) {
     })
     .status(200)
     .json("logout success");
+};
+
+exports.getUserInfoForForum = async function (req, res) {
+  const account = res.locals.account;
+  const bookId = req.params.bookId;
+  let user = await Account.findById(account._id).select(
+    "_id name nickname email listBooks avatar hoa"
+  );
+  if (user) {
+    user._doc["isRead"] = user.listBooks.includes(bookId);
+    return res.status(200).json(user);
+  }
+  return res.status(400).json("something wrong");
 };

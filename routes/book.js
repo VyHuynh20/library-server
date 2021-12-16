@@ -12,7 +12,6 @@ router.put("/:bookId", bookController.editBook);
 router.delete("/delete/:bookId", bookController.deleteBook);
 router.get("/bookByTag/:tagId", bookController.getBookbyTag);
 
-router.get("/getComment/:bookId", bookController.getComment);
 
 router.post("/search/", bookController.search);
 

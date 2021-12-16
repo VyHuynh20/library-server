@@ -4,6 +4,6 @@ const express = require("express");
 const router = express.Router();
 
 router.get("/", tagController.listTag);
-router.get("/others", tagController.getTagOther);
+router.get("/others/", tagController.getTagOther);
 
 module.exports = router;
