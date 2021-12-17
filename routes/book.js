@@ -12,7 +12,9 @@ router.put("/:bookId", bookController.editBook);
 router.delete("/delete/:bookId", bookController.deleteBook);
 router.get("/bookByTag/:tagId", bookController.getBookbyTag);
 
-
 router.post("/search/", bookController.search);
+
+//NOTE: post react
+router.post("/reacts/:_id", authUser, bookController.postReact);
 
 module.exports = router;

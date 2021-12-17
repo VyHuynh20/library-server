@@ -104,7 +104,7 @@ exports.getCommentsByBookId = async function (req, res) {
     "replies",
     "type",
   ])
-    .populate("user", ["_id", "avatar", "name", "hoa", "email"])
+    .populate("user", ["_id", "avatar", "name", "hoa", "email", "nickname"])
     .sort("-createdAt");
 
   let account;
