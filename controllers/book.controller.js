@@ -52,6 +52,7 @@ exports.detailBook = async function (req, res) {
     // react: 1 - like , 2 - dislike, 3 - none
     console.log("hello");
     let react = 0;
+    let isHad = false;
     let book = await Book.findById(req.params.bookId, [
       "_id",
       "name",
@@ -78,9 +79,13 @@ exports.detailBook = async function (req, res) {
       if (book.disliked && book.disliked.includes(account._id)) {
         react = -1;
       }
+      if (account.listBooks.includes(book._id)) {
+        isHad = true;
+      }
     }
 
     book._doc["react"] = react;
+    book._doc["isHad"] = isHad;
 
     return res.status(200).json(book);
   } catch (err) {

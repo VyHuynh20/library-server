@@ -3,84 +3,169 @@ const Book = require("../models/Book");
 
 const removeVie = require("../handlers/removeVie");
 const Note = require("../models/Note");
+const Account = require("../models/Account");
+const BookInBookcase = require("../models/BookInBookcase");
 
-exports.addBooktoBookcase = async function (req, res) {
-    const user = req.account.locals.account;
-    const bookId = req.body;
-    try {
-        const existingBook = await Bookcase.findOne({
-            user: user._id,
-            book: bookId,
-        });
-        if (existingBook) {
-            return res
-                .status(400)
-                .json({ error: "This book is already in your bookcase" });
-        }
-        const bookcase = new Bookcase({
-            user: user._id,
-            book: bookId,
-        });
-        await bookcase.save();
-        return res.status(200).json(bookcase);
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
-        console.log(err);
-    }
+exports.get = async function (req, res) {
+  console.log(">>> get Bookcase info");
+  const { _id, name, nickname, email, avatar, listBooks, listNotes, cover } =
+    res.locals.account;
+  return res.status(200).json({
+    _id,
+    name,
+    nickname,
+    email,
+    avatar,
+    listBooks,
+    listNotes,
+    cover,
+  });
 };
 
-exports.listBookinBookcase = async function (req, res) {
-    const user = req.locals.account;
-
-    Bookcase.find({ user: user._id }, ["user", "book", "progress"])
-        .populate("book", ["name", "authors", "tags", "image"])
-        .then((bookcase) => {
-            if (bookcase) {
-                res.json(bookcase);
-            } else {
-                res.status(400).json({ message: "No book in bookcase found!" });
-            }
-        })
-        .catch((err) => {
-            res.status(500).json({ message: "Something went wrong" });
-            console.log(err);
-        });
+exports.addBookToBookcase = async function (req, res) {
+  const user = res.locals.account;
+  const bookId = req.body;
+  try {
+    const existingBook = await Bookcase.findOne({
+      user: user._id,
+      book: bookId,
+    });
+    if (existingBook) {
+      return res
+        .status(400)
+        .json({ error: "This book is already in your bookcase" });
+    }
+    const bookcase = new Bookcase({
+      user: user._id,
+      book: bookId,
+    });
+    await bookcase.save();
+    return res.status(200).json(bookcase);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+    console.log(err);
+  }
 };
 
-exports.removeBook = async function (req, res) {
-    const user = req.account.locals.account;
-    const bookId = req.body;
-    try {
-        const bookcase = await Bookcase.findByIdAndDelete({
-            user: user._id,
-            book: bookId,
-        });
-        if (bookcase) {
-            return res.status(200).json({ error: "Remove successfully!" });
-        }
-        res.status(404).json({ error: "Not found!" });
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
-        console.log(err);
+exports.listBookInBookcase = async function (req, res) {
+  console.log(">>> get books in bookcase");
+  const user = res.locals.account;
+  Bookcase.find({ user: user._id }, ["user", "book", "progress"])
+    .populate("book", ["_id", "name", "authors", "tags", "image"])
+    .then((bookcase) => {
+      res.status(200).json(bookcase);
+    })
+    .catch((err) => {
+      res.status(500).json({ message: "Something went wrong" });
+      console.log(err);
+    });
+};
+
+exports.deleteBook = async function (req, res) {
+  const user = req.account.locals.account;
+  const bookId = req.body;
+  try {
+    const bookcase = await Bookcase.findByIdAndDelete({
+      user: user._id,
+      book: bookId,
+    });
+    if (bookcase) {
+      return res.status(200).json({ error: "Remove successfully!" });
     }
+    res.status(404).json({ error: "Not found!" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+    console.log(err);
+  }
 };
 
 exports.updateBookcase = async function (req, res) {
-    const bookcaseId = req.params.bookcaseId;
-    const progress = req.body;
-    try {
-        const bookcase = await Bookcase.findOne({ _id: bookcaseId });
-        bookcase.progress = progress;
+  const bookcaseId = req.params.bookcaseId;
+  const progress = req.body;
+  try {
+    const bookcase = await Bookcase.findOne({ _id: bookcaseId });
+    bookcase.progress = progress;
 
-        if (progress > 0) {
-            bookcase.status = 1;
-        }
-        if ((progress = 100)) {
-            bookcase.status = 2;
-        }
-        return res.status(200).json({ error: "Update successfully!" });
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
-        console.log(err);
+    if (progress > 0) {
+      bookcase.status = 1;
     }
+    if ((progress = 100)) {
+      bookcase.status = 2;
+    }
+    return res.status(200).json({ error: "Update successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+    console.log(err);
+  }
+};
+
+exports.buyBook = async function (req, res) {
+  console.log(">>> buy book");
+  try {
+    let account = res.locals.account;
+    const { bookId } = req.body;
+    console.log({ bookId });
+    let book = await Book.findById(bookId);
+    if (account.listBooks.includes(bookId)) {
+      //NOTE: sách đã có trong tủ sách
+      return res.status(210).json({ message: "book is exit in bookcase" });
+    }
+    if (account.hoa < book.price) {
+      //NOTE: thanh toán thất bại, hoa không đủ
+      return res.status(211).json({ message: "failed" });
+    }
+    let newBookInBookCase = new BookInBookcase({
+      user: account._id,
+      book: book._id,
+      key: book.key,
+    });
+    account.listBooks.push(bookId);
+    account.hoa = account.hoa - book.price;
+    book.totalRead = book.totalRead + 1;
+    await account.save();
+    await newBookInBookCase.save();
+    await book.save();
+    return res.status(200).json({ message: "success" });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.buyAndReadNow = async function (req, res) {
+  try {
+    let account = res.locals.account;
+    const { bookId } = req.body;
+    console.log({ bookId });
+    const book = await Book.findById(bookId);
+    console.log({ book });
+    if (account.listBooks.includes(bookId)) {
+      //NOTE: sách đã có trong tủ sách
+      return res.status(210).json({ message: "book is exit in bookcase" });
+    }
+    if (account.hoa < book.price) {
+      //NOTE: thanh toán thất bại, hoa không đủ
+      return res.status(211).json({ message: "failed" });
+    }
+    let newBookInBookCase = new BookInBookcase({
+      user: account._id,
+      book: book._id,
+      key: book.key,
+    });
+    account.listBooks.push(bookId);
+    account.hoa = account.hoa - book.price;
+    //NOTE: create new note
+    let newNote = new Note({
+      user: account._id,
+      name: "Note - " + book.name,
+      book: book._id,
+      image: book.image,
+    });
+    await newNote.save();
+    await account.save();
+    await newBookInBookCase.save();
+    return res.status(200).json(newNote);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };

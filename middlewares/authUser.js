@@ -24,7 +24,6 @@ const authUser = async (req, res, next) => {
     const date = Math.floor(Date.now() / 1000);
     if (data.exp >= date) {
       res.locals.account = account;
-      console.log({ account });
       next();
     } else {
       const message = "Unauthorized";

@@ -122,7 +122,6 @@ exports.editAccount = async function (req, res) {
     return res.status(200).json(loggedInAccount);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
-    console.log(err);
   }
 };
 
@@ -162,4 +161,17 @@ exports.getUserInfoForForum = async function (req, res) {
     return res.status(200).json(user);
   }
   return res.status(400).json("something wrong");
+};
+
+exports.putChangeCover = async function (req, res) {
+  try {
+    const account = res.locals.account;
+    const { cover } = req.body;
+    let newAccount = await Account.findById(account._id);
+    newAccount.cover = cover;
+    await newAccount.save();
+    return res.status(200).json(newAccount);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };

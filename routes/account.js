@@ -24,4 +24,7 @@ router.get(
   accountController.getUserInfoForForum
 );
 
+//NOTE: change cover account
+router.put("/changeCover/", authUser, accountController.putChangeCover);
+
 module.exports = router;
