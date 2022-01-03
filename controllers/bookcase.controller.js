@@ -62,14 +62,31 @@ exports.listBookInBookcase = async function (req, res) {
 };
 
 exports.deleteBook = async function (req, res) {
-  const user = req.account.locals.account;
-  const bookId = req.body;
+  const user = res.locals.account;
+  const { bookId } = req.params;
   try {
-    const bookcase = await Bookcase.findByIdAndDelete({
+    const bookcase = await Bookcase.deleteMany({
       user: user._id,
       book: bookId,
     });
+
     if (bookcase) {
+      let newUser = await Account.findById(user._id).populate({
+        path: "listNotes",
+        select: "_id book",
+      });
+      console.log({ newUser });
+      newUser.listBooks = newUser._doc.listBooks.filter(
+        (item) => item.toString() !== bookId
+      );
+      newUser.listNotes = newUser._doc.listNotes.filter(
+        (item) => item.book.toString() !== bookId
+      );
+      await newUser.save();
+      const note = await Note.deleteMany({
+        user: user._id,
+        book: bookId,
+      });
       return res.status(200).json({ error: "Remove successfully!" });
     }
     res.status(404).json({ error: "Not found!" });
@@ -125,7 +142,7 @@ exports.buyBook = async function (req, res) {
     await account.save();
     await newBookInBookCase.save();
     await book.save();
-    return res.status(200).json({ message: "success" });
+    return res.status(200).json(newBookInBookCase);
   } catch (err) {
     console.log({ err });
     res.status(500).json({ message: "Something went wrong" });
@@ -165,6 +182,26 @@ exports.buyAndReadNow = async function (req, res) {
     await account.save();
     await newBookInBookCase.save();
     return res.status(200).json(newNote);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.getBookInBookcase = async function (req, res) {
+  try {
+    let account = res.locals.account;
+    const { _id } = req.params;
+    const book = await Bookcase.findOne({
+      book: _id,
+      user: account._id,
+    }).populate({
+      path: "book",
+      select: ["_id", "image", "name", "link", "key"],
+    });
+    if (book) {
+      return res.status(200).json(book);
+    }
+    return res.status(404).json({ message: "Not found" });
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }

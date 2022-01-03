@@ -15,6 +15,10 @@ router.get(
 router.post("/", authUser, noteController.postNewNote);
 //NOTE: modify note
 router.put("/", authUser, noteController.putNote);
+//NOTE: change content
+router.put("/content", authUser, noteController.putNoteContent);
+//NOTE: change page
+router.put("/page", authUser, noteController.putNoteNumberPage);
 //NOTE: delete note
 router.delete("/:_id", authUser, noteController.deleteNote);
 //NOTE: change note info

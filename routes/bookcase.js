@@ -6,6 +6,16 @@ const router = express.Router();
 
 router.get("/books/", authUser, bookcaseController.listBookInBookcase);
 router.get("/", authUser, bookcaseController.get);
+router.get(
+  "/getBookInBookcase/:_id",
+  authUser,
+  bookcaseController.getBookInBookcase
+);
+router.delete(
+  "/deleteBookInBookcase/:bookId",
+  authUser,
+  bookcaseController.deleteBook
+);
 
 //NOTE: post buy book - add book in bookcase
 router.post("/buyBook/", authUser, bookcaseController.buyBook);

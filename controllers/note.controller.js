@@ -3,6 +3,7 @@ const Book = require("../models/Book");
 
 const Note = require("../models/Note");
 const Account = require("../models/Account");
+const BookInBookcase = require("../models/BookInBookcase");
 
 exports.getNotesByAccountId = async function (req, res) {
   console.log(">>> get notes");
@@ -36,7 +37,7 @@ exports.getNoteDetail = async function (req, res) {
     const _id = req.params._id;
 
     let note = await Note.findOne({ _id: _id, user: user._id })
-      .select("_id name book user content page status")
+      .select("_id name book user image content page status")
       .populate("book", ["_id", "name", "link", "key", "image"]);
     if (note) {
       note.status = 1;
@@ -59,8 +60,8 @@ exports.getNotesActiveByAccountId = async function (req, res) {
     const user = res.locals.account;
     console.log({ user });
     const notes = await Note.find({ user: user._id, status: 1 })
-      .select("_id name book user image status")
-      .populate("book", ["_id", "name"])
+      .select("_id name book user image content page status")
+      .populate("book", ["_id", "name", "link", "key", "image"])
       .sort("-updatedAt");
     if (notes) {
       return res.status(200).json(notes);
@@ -104,11 +105,63 @@ exports.putNote = async function (req, res) {
   try {
     const user = res.locals.account;
     const { _id, name, content, page } = req.body;
-    let note = await Note.findOne({ _id: _id, user: user._id });
+    let note = await Note.findOne({ _id: _id, user: user._id })
+      .select("_id name book user image content page status")
+      .populate("book", ["_id", "name", "link", "key", "image"]);
     if (note) {
       note.name = name;
       note.content = content;
       note.page = page;
+
+      await note.save();
+      return res.status(200).json(note);
+    }
+    return res.status(404).json({ message: "Not found" });
+  } catch (e) {
+    console.log({ e });
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.putNoteNumberPage = async function (req, res) {
+  try {
+    const user = res.locals.account;
+    const { _id, page } = req.body;
+    let note = await Note.findOne({ _id: _id, user: user._id })
+      .select("_id name book user image content page status")
+      .populate("book", ["_id", "name", "link", "key", "image"]);
+    let bookInBookcase = await BookInBookcase.findOne({
+      book: note.book,
+    }).populate("book", ["_id", "totalPages"]);
+    //NOTE: update progress
+    if (page / bookInBookcase.book.totalPages > bookInBookcase.progress) {
+      bookInBookcase.progress = Math.round(
+        page / bookInBookcase.book.totalPages
+      );
+      await bookInBookcase.save();
+    }
+    if (note) {
+      note.page = page;
+
+      await note.save();
+      return res.status(200).json(note);
+    }
+    return res.status(404).json({ message: "Not found" });
+  } catch (e) {
+    console.log({ e });
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.putNoteContent = async function (req, res) {
+  try {
+    const user = res.locals.account;
+    const { _id, content } = req.body;
+    let note = await Note.findOne({ _id: _id, user: user._id })
+      .select("_id name book user image content page status")
+      .populate("book", ["_id", "name", "link", "key", "image"]);
+    if (note) {
+      note.content = content;
 
       await note.save();
       return res.status(200).json(note);
