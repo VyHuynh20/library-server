@@ -34,6 +34,7 @@ const bookcaseRoute = require("./routes/bookcase");
 const noteRoute = require("./routes/note");
 const commentRoute = require("./routes/comment");
 const replyRoute = require("./routes/reply");
+const transactionRoute = require("./routes/transaction");
 
 // Routes
 app.get("/", (req, res) => {
@@ -47,6 +48,7 @@ app.use("/bookcases", bookcaseRoute);
 app.use("/notes", noteRoute);
 app.use("/comments", commentRoute);
 app.use("/replies", replyRoute);
+app.use("/transactions", transactionRoute);
 
 // Set up environment
 app.listen(process.env.PORT, () => {

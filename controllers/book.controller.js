@@ -52,6 +52,7 @@ exports.detailBook = async function (req, res) {
     // react: 1 - like , 2 - dislike, 3 - none
     console.log("hello");
     let react = 0;
+    let isHad = false;
     let book = await Book.findById(req.params.bookId, [
       "_id",
       "name",
@@ -78,9 +79,13 @@ exports.detailBook = async function (req, res) {
       if (book.disliked && book.disliked.includes(account._id)) {
         react = -1;
       }
+      if (account.listBooks.includes(book._id)) {
+        isHad = true;
+      }
     }
 
     book._doc["react"] = react;
+    book._doc["isHad"] = isHad;
 
     return res.status(200).json(book);
   } catch (err) {
@@ -240,5 +245,50 @@ exports.search = async function (req, res) {
   } catch (err) {
     console.log(err);
     return res.status(400).json({ error: "Something went wrong" });
+  }
+};
+
+exports.postReact = async function (req, res) {
+  console.log(">>> post react");
+  try {
+    const { react } = req.body;
+    const _id = req.params._id;
+    const user = res.locals.account;
+    let book = await Book.findById(_id);
+    console.log({ before: book._doc });
+    if (book) {
+      //NOTE: delete in liked list
+      let index = book._doc.liked.indexOf(user._id);
+      if (index > -1) {
+        book._doc.liked.splice(index, 1);
+      }
+
+      //NOTE: delete in disliked list
+      index = book._doc.disliked.indexOf(user._id);
+      if (index > -1) {
+        book._doc.disliked.splice(index, 1);
+      }
+
+      //NOTE: modify react
+      switch (react) {
+        case 1:
+          book.liked.push(user._id);
+          break;
+        case -1:
+          book.disliked.push(user._id);
+          break;
+      }
+
+      //NOTE: calculate total like and dislike
+      book.totalLike = book.liked.length;
+      book.totalDislike = book.disliked.length;
+
+      book.save();
+
+      return res.status(200).json(book);
+    }
+    return res.status(400).json({ message: "Not Found" });
+  } catch (e) {
+    return res.status(400).json({ error: "Something went wrong!" });
   }
 };
