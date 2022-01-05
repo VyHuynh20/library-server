@@ -25,5 +25,7 @@ router.delete("/:_id", authUser, noteController.deleteNote);
 router.put("/changeInfo/", authUser, noteController.changeNoteInfo);
 //NOTE: close note
 router.get("/close/:_id", authUser, noteController.closeNote);
+//NOTE: complete Pomodoro
+router.post("/completePomodoro/", authUser, noteController.completePomodoro);
 
 module.exports = router;

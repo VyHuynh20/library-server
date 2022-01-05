@@ -23,4 +23,7 @@ router.post("/buyBook/", authUser, bookcaseController.buyBook);
 //NOTE: post buy book and read now
 router.post("/buyBookAndReadNow/", authUser, bookcaseController.buyAndReadNow);
 
+//NOTE: refund 50% hoa when complete book in bookcase
+router.get("/refund/", authUser, bookcaseController.refundBook);
+
 module.exports = router;

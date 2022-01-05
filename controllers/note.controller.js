@@ -4,6 +4,7 @@ const Book = require("../models/Book");
 const Note = require("../models/Note");
 const Account = require("../models/Account");
 const BookInBookcase = require("../models/BookInBookcase");
+const createTransaction = require("../middlewares/createTransaction");
 
 exports.getNotesByAccountId = async function (req, res) {
   console.log(">>> get notes");
@@ -16,11 +17,10 @@ exports.getNotesByAccountId = async function (req, res) {
     "name",
     "page",
   ])
-    .populate("book", ["_id", "name", "image"])
     .sort("-updatedAt")
-    .then((bookcase) => {
-      if (bookcase) {
-        res.status(200).json(bookcase);
+    .then((notes) => {
+      if (notes) {
+        res.status(200).json(notes);
       } else {
         res.status(400).json({ message: "No book in bookcase found!" });
       }
@@ -132,11 +132,15 @@ exports.putNoteNumberPage = async function (req, res) {
       .populate("book", ["_id", "name", "link", "key", "image"]);
     let bookInBookcase = await BookInBookcase.findOne({
       book: note.book,
+      user: user._id,
     }).populate("book", ["_id", "totalPages"]);
     //NOTE: update progress
-    if (page / bookInBookcase.book.totalPages > bookInBookcase.progress) {
+    if (
+      bookInBookcase.progress === Infinity ||
+      page / bookInBookcase.book.totalPages > bookInBookcase.progress / 100
+    ) {
       bookInBookcase.progress = Math.round(
-        page / bookInBookcase.book.totalPages
+        (100 * page) / bookInBookcase.book.totalPages
       );
       await bookInBookcase.save();
     }
@@ -177,7 +181,7 @@ exports.deleteNote = async function (req, res) {
   try {
     const user = res.locals.account;
     const _id = req.params._id;
-    let note = await Note.findByIdAndDelete({ _id: _id, user: user._id });
+    let note = await Note.deleteOne({ _id: _id, user: user._id });
     if (note) {
       return res.status(200).json({ message: "delete success!" });
     }
@@ -217,6 +221,27 @@ exports.closeNote = async function (req, res) {
       return res.status(200).json({ message: "close note success" });
     }
     return res.status(404).json({ message: "Not found" });
+  } catch (e) {
+    console.log({ e });
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.completePomodoro = async function (req, res) {
+  try {
+    const { goal } = req.body;
+    let userId = res.locals.account._id;
+    const hoa = (goal - (goal % 5)) / 5;
+    const type = "pomodoro";
+    const message = `Hoàn Thành POMODORO ${goal} Phút`;
+    const resData = await createTransaction({
+      type,
+      message,
+      userId,
+      hoa,
+    });
+
+    return res.status(200).json(resData);
   } catch (e) {
     console.log({ e });
     res.status(500).json({ message: "Something went wrong" });

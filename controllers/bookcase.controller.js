@@ -5,6 +5,7 @@ const removeVie = require("../handlers/removeVie");
 const Note = require("../models/Note");
 const Account = require("../models/Account");
 const BookInBookcase = require("../models/BookInBookcase");
+const createTransaction = require("../middlewares/createTransaction");
 
 exports.get = async function (req, res) {
   console.log(">>> get Bookcase info");
@@ -136,13 +137,22 @@ exports.buyBook = async function (req, res) {
       book: book._id,
       key: book.key,
     });
-    account.listBooks.push(bookId);
-    account.hoa = account.hoa - book.price;
-    book.totalRead = book.totalRead + 1;
-    await account.save();
-    await newBookInBookCase.save();
-    await book.save();
-    return res.status(200).json(newBookInBookCase);
+
+    //NOTE: create Transaction
+    const userId = account._id;
+    const type = "buy-book";
+    const message = `Mua quyền sách '${book.name} [${book._id}]'`;
+    const hoa = 0 - book.price;
+    const transaction = createTransaction({ type, message, userId, hoa });
+    if (transaction) {
+      book.totalRead = book.totalRead + 1;
+      account.listBooks.push(bookId);
+      await account.save();
+      await newBookInBookCase.save();
+      await book.save();
+      return res.status(200).json(newBookInBookCase);
+    }
+    return res.status(211).json({ message: "failed" });
   } catch (err) {
     console.log({ err });
     res.status(500).json({ message: "Something went wrong" });
@@ -153,9 +163,7 @@ exports.buyAndReadNow = async function (req, res) {
   try {
     let account = res.locals.account;
     const { bookId } = req.body;
-    console.log({ bookId });
-    const book = await Book.findById(bookId);
-    console.log({ book });
+    let book = await Book.findById(bookId);
     if (account.listBooks.includes(bookId)) {
       //NOTE: sách đã có trong tủ sách
       return res.status(210).json({ message: "book is exit in bookcase" });
@@ -169,19 +177,30 @@ exports.buyAndReadNow = async function (req, res) {
       book: book._id,
       key: book.key,
     });
-    account.listBooks.push(bookId);
-    account.hoa = account.hoa - book.price;
-    //NOTE: create new note
-    let newNote = new Note({
-      user: account._id,
-      name: "Note - " + book.name,
-      book: book._id,
-      image: book.image,
-    });
-    await newNote.save();
-    await account.save();
-    await newBookInBookCase.save();
-    return res.status(200).json(newNote);
+
+    //NOTE: create Transaction
+    const userId = account._id;
+    const type = "buy-book";
+    const message = `Mua quyền sách '${book.name} [${book._id}]'`;
+    const hoa = 0 - book.price;
+    const transaction = createTransaction({ type, message, userId, hoa });
+    if (transaction) {
+      book.totalRead = book.totalRead + 1;
+      account.listBooks.push(bookId);
+      //NOTE: create new note
+      let newNote = new Note({
+        user: account._id,
+        name: "Note - " + book.name,
+        book: book._id,
+        image: book.image,
+      });
+      await newNote.save();
+      await account.save();
+      await book.save();
+      await newBookInBookCase.save();
+      return res.status(200).json(newNote);
+    }
+    return res.status(211).json({ message: "failed" });
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
@@ -202,6 +221,49 @@ exports.getBookInBookcase = async function (req, res) {
       return res.status(200).json(book);
     }
     return res.status(404).json({ message: "Not found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.refundBook = async function (req, res) {
+  try {
+    let account = res.locals.account;
+    let booksRefund = await Bookcase.find({
+      user: account._id,
+      progress: 100,
+      isRefunded: 0,
+    }).populate({ path: "book", select: "_id name price" });
+    if (booksRefund.length === 0) {
+      return res.status(200).json({ bookNumber: 0, hoa: 0, totalHoa: 0 });
+    }
+
+    let bookNumber = 0;
+    let hoaNumber = 0;
+    let totalHoaNumber = 0;
+    for (let index = 0; index < booksRefund.length; index++) {
+      let element = booksRefund[index];
+      const type = "refund";
+      const hoa = (element.book.price + 1 - ((element.book.price + 1) % 2)) / 2;
+      const userId = account._id;
+      const message = `Đọc hoàn thành quyển sách '${element.name} [${element._id}]'`;
+      const transaction = await createTransaction({
+        type,
+        message,
+        userId,
+        hoa,
+      });
+      hoaNumber += transaction.hoa;
+      totalHoaNumber = transaction.totalHoa;
+      bookNumber += 1;
+      element.isRefunded = 1;
+      await element.save();
+    }
+    return res.status(200).json({
+      bookNumber: bookNumber,
+      hoa: hoaNumber,
+      totalHoa: totalHoaNumber,
+    });
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
