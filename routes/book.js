@@ -7,7 +7,6 @@ const router = express.Router();
 router.get("/", bookController.listBook);
 router.get("/detail/:bookId", bookController.detailBook);
 router.get("/slide/", bookController.getSlideshow);
-router.post("/", bookController.createBook);
 router.put("/:bookId", bookController.editBook);
 router.delete("/delete/:bookId", bookController.deleteBook);
 router.get("/bookByTag/:tagId", bookController.getBookbyTag);

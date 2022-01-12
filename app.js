@@ -13,10 +13,10 @@ require("dotenv").config();
 const app = express();
 app.use(cookieParser());
 app.use(
-  cors({
-    origin: "http://localhost:3000", //Chan tat ca cac domain khac ngoai domain nay
-    credentials: true, //Để bật cookie HTTP qua CORS
-  })
+    cors({
+        origin: "http://localhost:3000", //Chan tat ca cac domain khac ngoai domain nay
+        credentials: true, //Để bật cookie HTTP qua CORS
+    })
 );
 
 connectDB();
@@ -35,10 +35,11 @@ const noteRoute = require("./routes/note");
 const commentRoute = require("./routes/comment");
 const replyRoute = require("./routes/reply");
 const transactionRoute = require("./routes/transaction");
+const adminRoute = require("./routes/admin");
 
 // Routes
 app.get("/", (req, res) => {
-  res.send("Library Management");
+    res.send("Library Management");
 });
 app.use("/accounts", accountRoute);
 app.use("/books", bookRoute);
@@ -49,8 +50,9 @@ app.use("/notes", noteRoute);
 app.use("/comments", commentRoute);
 app.use("/replies", replyRoute);
 app.use("/transactions", transactionRoute);
+app.use("/admin", adminRoute);
 
 // Set up environment
 app.listen(process.env.PORT, () => {
-  console.log(`Server is running on http://localhost:${process.env.PORT}`);
+    console.log(`Server is running on http://localhost:${process.env.PORT}`);
 });
