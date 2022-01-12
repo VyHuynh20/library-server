@@ -15,7 +15,7 @@ const authUser = async (req, res, next) => {
     // }
     // const token = authHeader.substring(7, authHeader.length);
     const data = jwt.verify(token, process.env.JWT_SECRET);
-    const account = await Account.findOne({ _id: data._id });
+    const account = await Account.findOne({ _id: data._id, is_banned: 0 });
 
     if (!account) {
       return res.status(403).json({ error: "This token is not valid" });

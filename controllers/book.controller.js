@@ -53,7 +53,8 @@ exports.detailBook = async function (req, res) {
     console.log("hello");
     let react = 0;
     let isHad = false;
-    let book = await Book.findById(req.params.bookId, [
+    //is_active: 1
+    let book = await Book.findOne({ _id: req.params.bookId }, [
       "_id",
       "name",
       "image",
@@ -68,6 +69,7 @@ exports.detailBook = async function (req, res) {
       "liked",
       "disliked",
       "linkIntro",
+      "is_active",
     ]).populate("tags", ["_id", "name"]);
 
     let account = await checkUser(req);
@@ -86,7 +88,6 @@ exports.detailBook = async function (req, res) {
 
     book._doc["react"] = react;
     book._doc["isHad"] = isHad;
-
     return res.status(200).json(book);
   } catch (err) {
     return res.status(400).json({ error: "Something went wrong!" });
@@ -113,7 +114,7 @@ exports.getBookbyTag = async function (req, res) {
 
   console.log(tagId);
 
-  Book.find({ tags: tagId }, [
+  Book.find({ tags: tagId, is_active: 1 }, [
     "_id",
     "name",
     "author",
@@ -135,7 +136,7 @@ exports.getBookbyTag = async function (req, res) {
 
 exports.getSlideshow = async function (req, res) {
   console.log("run here");
-  Book.find({})
+  Book.find({ is_active: 1 })
     .select("_id name image")
     .limit(5)
     .sort({ name: -1 })
@@ -194,7 +195,7 @@ exports.search = async function (req, res) {
       };
     }
 
-    let books = await Book.find(findOption)
+    let books = await Book.find({ ...findOption, is_active: 1 })
       .sort(sortOption)
       .select(
         "_id name nameNoSign price author authorNoSign tags description descriptionNoSign image is_active totalLike totalDislike liked disliked totalRead"
