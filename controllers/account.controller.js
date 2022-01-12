@@ -27,6 +27,12 @@ exports.loginGoogle = async function (req, res) {
             });
           } else {
             if (account) {
+              if (account.is_banned) {
+                return res
+                  .status(403)
+                  .json({ message: "Tài khoản đã bị khóa!" });
+              }
+
               const token = jwt.sign(
                 { _id: account._id },
                 process.env.JWT_SECRET,
