@@ -17,6 +17,20 @@ router.delete("/deleteBook/:bookId", authAdmin, adminController.deleteBook);
 
 //NOTE: Tag manage
 router.get("/getAllTags", authAdmin, adminController.getAllTags);
+router.get("/getTagDetail/:tagId", adminController.getTagDetail);
+router.put("/putTag/:tagId", adminController.editTag);
+router.put("/banTag/:tagId", authAdmin, adminController.banTag);
+router.delete("/deleteTag/:tagId", authAdmin, adminController.deleteTag);
+
+//NOTE: Category manage
+router.get("/getCategoryDetail/:categoryId", adminController.getCategoryDetail);
+router.put("/putCategory/:categoryId", authAdmin, adminController.editCategory);
+router.put("/banCategory/:categoryId", authAdmin, adminController.banCategory);
+router.delete(
+    "/deleteCategory/:categoryId",
+    authAdmin,
+    adminController.deleteCategory
+);
 
 //NOTE: User manage
 router.get("/getAllUser", authAdmin, adminController.getAllUsers);
