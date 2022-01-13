@@ -2,7 +2,7 @@ const Category = require("../models/Category");
 const Tag = require("../models/Tag");
 
 exports.listCategory = async function (req, res) {
-  var categories = await Category.find({})
+  var categories = await Category.find({ is_active: 1 })
     .select("_id thumbnail color quote tags")
     .populate({
       path: "tags",

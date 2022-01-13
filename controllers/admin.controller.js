@@ -342,7 +342,7 @@ exports.createCategory = async function (req, res) {
 
     var nameNoSign = removeVieCharacters(name);
 
-    const category = new Category({
+    let category = new Category({
       name,
       quote,
       nameNoSign,
@@ -353,16 +353,23 @@ exports.createCategory = async function (req, res) {
     });
 
     // save tag in the database
-    await category
-      .save()
-      .then((data) => {
-        res.status(200).json(data);
-      })
-      .catch((err) => {
-        res.status(500).send({
-          message: err.message || "Something went wrong",
-        });
-      });
+    await category.save();
+
+    category = await Category.findById(req.params.categoryId, [
+      "_id",
+      "name",
+      "quote",
+      "color",
+      "thumbnail",
+      "tags",
+      "is_active",
+    ]).populate({
+      path: "tags",
+      match: { is_active: { $eq: 1 } },
+      select: "_id name",
+    });
+
+    return res.status(200).json(category);
   } catch (err) {
     console.log({ err });
     res.status(500).json({ message: "Something went wrong" });
@@ -390,6 +397,21 @@ exports.editCategory = async function (req, res) {
     category.tags = tags;
 
     await category.save();
+
+    category = await Category.findById(req.params.categoryId, [
+      "_id",
+      "name",
+      "quote",
+      "color",
+      "thumbnail",
+      "tags",
+      "is_active",
+    ]).populate({
+      path: "tags",
+      match: { is_active: { $eq: 1 } },
+      select: "_id name",
+    });
+
     return res.status(200).json(category);
   } catch (err) {
     console.log({ err });

@@ -70,7 +70,11 @@ exports.detailBook = async function (req, res) {
       "disliked",
       "linkIntro",
       "is_active",
-    ]).populate("tags", ["_id", "name"]);
+    ]).populate({
+      path: "tags",
+      match: { is_active: { $eq: 1 } },
+      select: "_id name",
+    });
 
     let account = await checkUser(req);
 
