@@ -235,6 +235,7 @@ exports.putBook = async function (req, res) {
           "totalPages",
           "linkIntro",
           "link",
+          "is_active"
         ]).populate("tags", ["_id", "name"]);
         return res.status(200).json(book);
       }
@@ -276,6 +277,7 @@ exports.putBook = async function (req, res) {
         "totalPages",
         "linkIntro",
         "link",
+        "is_active"
       ]).populate("tags", ["_id", "name"]);
 
       return res.status(200).json(book);
