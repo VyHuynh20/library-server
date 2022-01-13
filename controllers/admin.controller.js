@@ -122,9 +122,9 @@ exports.getBookDetail = async function (req, res) {
   }
 };
 
-exports.getAllTags = async function (req, res) {
+exports.getTags = async function (req, res) {
   try {
-    const tags = await Tag.find().select("_id name is_active");
+    const tags = await Tag.find({ is_active: 1 }).select("_id name is_active");
 
     return res.status(200).json(tags);
   } catch (err) {
@@ -317,9 +317,14 @@ exports.deleteBook = async function (req, res) {
 // Category
 exports.getAllCategories = async function (req, res) {
   try {
-    let categories = await Category.find().select(
-      "_id name thumbnail quote color is_active"
-    );
+    let categories = await Category.find()
+      .select("_id name thumbnail quote color is_active tags")
+      .sort("-updatedAt")
+      .populate({
+        path: "tags",
+        match: { is_active: { $eq: 1 } },
+        select: "_id name",
+      });
     return res.status(200).json(categories);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
@@ -438,15 +443,27 @@ exports.getCategoryDetail = async function (req, res) {
 
 exports.banCategory = async function (req, res) {
   try {
-    const { is_banned } = req.body;
-    let category = await Category.findById(req.params.userId);
+    const { is_active } = req.body;
+    let category = await Category.findById(req.params.categoryId);
     if (category) {
-      category.is_active = is_banned;
+      category.is_active = is_active;
       await category.save();
 
-      return res.status(200).json({ is_banned, _id: user._id });
+      return res.status(200).json({ is_active, _id: category._id });
     }
     return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+//NOTE: tag
+exports.getAllTags = async function (req, res) {
+  try {
+    let tags = await Tag.find()
+      .select("_id name description is_active")
+      .sort("-updatedAt");
+    return res.status(200).json(tags);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
@@ -458,8 +475,7 @@ exports.getTagDetail = async function (req, res) {
       "_id",
       "name",
       "description",
-      "category",
-    ]).populate("category", ["_id", "name"]);
+    ]);
 
     return res.status(200).json(tag);
   } catch (err) {
@@ -474,29 +490,15 @@ exports.createTag = async function (req, res) {
     return;
   }
 
+  const { name, description } = req.body;
+
   const tag = new Tag({
-    name: req.body.name,
-    description: req.body.description,
-    category: req.body.category,
-    is_active: req.body.status,
+    name: name,
+    description: description,
   });
 
   // save tag in the database
-  await tag.save(tag);
-
-  var categoryFind = await Category.findById(req.body.category);
-  var categoryMain = await Category.find();
-
-  if (categoryFind) {
-    categoryMain.listTag.push(tag._id);
-  }
-
-  tag = await Tag.findById(tag._id, [
-    "_id",
-    "name",
-    "description",
-    "category",
-  ]).populate("category", ["_id", "name"]);
+  await tag.save();
 
   return res.status(200).json(tag);
 };
@@ -506,16 +508,11 @@ exports.editTag = async function (req, res) {
     return res.status(400).send({ message: "Data to update can not be empty" });
   }
   const { tagId } = req.params;
+  const { name, description } = req.body;
 
   let tag = await Tag.findById(tagId);
-  tag.name = req.body.name;
-  tag.description = req.body.description;
-  if (req.body.category) {
-    tag.category = req.body.category;
-  }
-
-  tag.is_active = req.body.status;
-
+  tag.name = name;
+  tag.description = description;
   await tag.save();
   return res.status(200).json(tag);
 };
@@ -544,13 +541,13 @@ exports.deleteTag = async function (req, res) {
 
 exports.banTag = async function (req, res) {
   try {
-    const { is_banned } = req.body;
-    let tag = await Tag.findById(req.params.userId);
+    const { is_active } = req.body;
+    let tag = await Tag.findById(req.params.tagId);
     if (tag) {
-      tag.is_active = is_banned;
+      tag.is_active = is_active;
       await tag.save();
 
-      return res.status(200).json({ is_banned, _id: user._id });
+      return res.status(200).json({ is_active, _id: tag._id });
     }
     return res.status(404).json({ message: "Not Found" });
   } catch (err) {
@@ -602,11 +599,11 @@ exports.bookStatistical = async function (req, res) {
     });
 
     //NOTE: avg Reach
-    let avgReach = totalReach / totalBooks;
+    let avgReach = (totalReach / totalBooks).toFixed(2);
 
     //NOTE: avg like & dislike
-    let avgLike = totalLike / totalBooks;
-    let avgDislike = totalDislike / totalBooks;
+    let avgLike = (totalLike / totalBooks).toFixed(2);
+    let avgDislike = (totalDislike / totalBooks).toFixed(2);
 
     return res.status(200).json({
       totalNewBooks,
