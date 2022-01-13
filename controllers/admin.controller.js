@@ -12,554 +12,823 @@ const Tag = require("../models/Tag");
 const Transaction = require("../models/Transaction");
 
 exports.login = async function (req, res) {
-    console.log(">>> login");
-    try {
-        const { username, password } = req.body;
-        const adminCheck = await Admin.findOne({ username }).select("salt");
-        //const { salt, hashed } = await hashPassword(password);
-        if (adminCheck) {
-            const hashed = await comparePassword(adminCheck.salt, password);
-            const admin = await Admin.findOne({
-                username,
-                password: hashed,
-            }).select("_id name status");
-            if (admin) {
-                const token = jwt.sign(
-                    { _id: admin._id },
-                    process.env.JWT_SECRET,
-                    {
-                        expiresIn: "24h",
-                    }
-                );
-                res.cookie("access_token", token, {
-                    maxAge: 24 * 60 * 60 * 100,
-                    httpOnly: true,
-                    // secure: true;
-                });
-                res.status(200).json({ admin });
-            } else {
-                return res
-                    .status(404)
-                    .json({ error: "Sai tài khoản hoặc mật khẩu" });
-            }
-        } else {
-            return res
-                .status(404)
-                .json({ error: "Sai tài khoản hoặc mật khẩu" });
-        }
-    } catch (err) {
-        console.log(err);
-        return res.status(400).json({ error: "Something went wrong!" });
+  console.log(">>> login");
+  try {
+    const { username, password } = req.body;
+    const adminCheck = await Admin.findOne({ username }).select("salt");
+    //const { salt, hashed } = await hashPassword(password);
+    if (adminCheck) {
+      const hashed = await comparePassword(adminCheck.salt, password);
+      const admin = await Admin.findOne({
+        username,
+        password: hashed,
+      }).select("_id name status");
+      if (admin) {
+        const token = jwt.sign({ _id: admin._id }, process.env.JWT_SECRET, {
+          expiresIn: "24h",
+        });
+        res.cookie("access_token_admin", token, {
+          maxAge: 24 * 60 * 60 * 100,
+          httpOnly: true,
+          // secure: true;
+        });
+        res.status(200).json({ admin });
+      } else {
+        return res.status(404).json({ error: "Sai tài khoản hoặc mật khẩu" });
+      }
+    } else {
+      return res.status(404).json({ error: "Sai tài khoản hoặc mật khẩu" });
     }
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
 };
 
 exports.logout = async function (req, res) {
-    console.log(">>> logout");
-    res.cookie("access_token", "", {
-        maxAge: 0,
-        httpOnly: true,
-        // secure: true;
+  console.log(">>> logout");
+  res
+    .cookie("access_token_admin", "", {
+      maxAge: 0,
+      httpOnly: true,
+      // secure: true;
     })
-        .status(200)
-        .json("logout success");
+    .status(200)
+    .json("logout success");
 };
 
 exports.reSign = async function (req, res) {
-    console.log(">>> resign");
-    const admin = res.locals.admin;
-    if (admin) {
-        const { _id, name, status, avatar } = admin;
-        return res.json({
-            admin: { _id, name, status, avatar },
-        });
-    }
-    return res.status(403).json({
-        error: "no Authentication",
+  console.log(">>> resign");
+  const admin = res.locals.admin;
+  if (admin) {
+    const { _id, name, status, avatar } = admin;
+    return res.json({
+      admin: { _id, name, status, avatar },
     });
+  }
+  return res.status(403).json({
+    error: "no Authentication",
+  });
 };
 
 exports.getAllBooks = async function (req, res) {
-    try {
-        let books = await Book.find()
-            .populate({
-                path: "tags",
-                select: "_id name",
-            })
-            .select(
-                "_id name tags price totalRead totalLike totalDislike  is_active"
-            );
-        const comments = await Comment.find();
-        for (let index = 0; index < books.length; index++) {
-            let element = books[index];
-            let sum = 0;
-            comments
-                .filter(
-                    (item) => item.book.toString() === element._id.toString()
-                )
-                .forEach((item) => {
-                    sum += 1 + item.replies.length;
-                });
-            element._doc.totalComments = sum;
-        }
-        return res.status(200).json(books);
-    } catch (err) {
-        console.log(err);
-        return res.status(400).json({ error: "Something went wrong!" });
+  try {
+    let books = await Book.find()
+      .populate({
+        path: "tags",
+        select: "_id name",
+      })
+      .select(
+        "_id name tags price totalRead totalLike totalDislike  is_active"
+      );
+    const comments = await Comment.find();
+    for (let index = 0; index < books.length; index++) {
+      let element = books[index];
+      let sum = 0;
+      comments
+        .filter((item) => item.book.toString() === element._id.toString())
+        .forEach((item) => {
+          sum += 1 + item.replies.length;
+        });
+      element._doc.totalComments = sum;
     }
+    return res.status(200).json(books);
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
 };
 
 exports.getBookDetail = async function (req, res) {
-    try {
-        let book = await Book.findById(req.params.bookId, [
-            "_id",
-            "name",
-            "key",
-            "image",
-            "price",
-            "description",
-            "authors",
-            "quote",
-            "tags",
-            "totalPages",
-            "linkIntro",
-            "link",
-        ]).populate("tags", ["_id", "name"]);
+  try {
+    let book = await Book.findById(req.params.bookId, [
+      "_id",
+      "name",
+      "key",
+      "image",
+      "price",
+      "description",
+      "author",
+      "quote",
+      "tags",
+      "totalPages",
+      "linkIntro",
+      "link",
+    ]).populate("tags", ["_id", "name"]);
 
-        return res.status(200).json(book);
-    } catch (err) {
-        return res.status(400).json({ error: "Something went wrong!" });
-    }
+    return res.status(200).json(book);
+  } catch (err) {
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
 };
 
 exports.getAllTags = async function (req, res) {
-    try {
-        const tags = await Tag.find().select("_id name is_active");
+  try {
+    const tags = await Tag.find().select("_id name is_active");
 
-        return res.status(200).json(tags);
-    } catch (err) {
-        return res.status(400).json({ error: "Something went wrong!" });
-    }
+    return res.status(200).json(tags);
+  } catch (err) {
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
 };
 
 exports.getAllUsers = async function (req, res) {
-    try {
-        const users = await Account.find().select(
-            "_id nickname name email avatar faculty is_banned dob gender"
-        );
+  try {
+    const users = await Account.find().select(
+      "_id nickname name email avatar faculty is_banned dob gender"
+    );
 
-        return res.status(200).json(users);
-    } catch (err) {
-        return res.status(400).json({ error: "Something went wrong!" });
-    }
+    return res.status(200).json(users);
+  } catch (err) {
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
 };
 
 exports.getUserDetail = async function (req, res) {
-    try {
-        let user = await Account.findById(req.params.userId);
-        const transaction = await Transaction.find({
-            user: user._id,
-            type: "pomodoro",
-        }).select("hoa");
-        let sum = 0;
-        transaction.forEach((element) => {
-            sum += element.hoa * 5;
-        });
-        user._doc.pomodoro = sum;
-        return res.status(200).json(user);
-    } catch (err) {
-        console.log({ err });
-        return res.status(400).json({ error: "Something went wrong!" });
-    }
+  try {
+    let user = await Account.findById(req.params.userId);
+    const transaction = await Transaction.find({
+      user: user._id,
+      type: "pomodoro",
+    }).select("hoa");
+    let sum = 0;
+    transaction.forEach((element) => {
+      sum += element.hoa * 5;
+    });
+    user._doc.pomodoro = sum;
+    return res.status(200).json(user);
+  } catch (err) {
+    console.log({ err });
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
 };
 
 exports.banUser = async function (req, res) {
-    try {
-        const { is_banned } = req.body;
-        let user = await Account.findById(req.params.userId);
-        if (user) {
-            user.is_banned = is_banned;
-            await user.save();
+  try {
+    const { is_banned } = req.body;
+    let user = await Account.findById(req.params.userId);
+    if (user) {
+      user.is_banned = is_banned;
+      await user.save();
 
-            return res.status(200).json({ is_banned, _id: user._id });
-        }
-        return res.status(404).json({ message: "Not Found" });
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
+      return res.status(200).json({ is_banned, _id: user._id });
     }
+    return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 exports.putBook = async function (req, res) {
-    try {
-        const {
-            name,
-            author,
-            tags,
-            description,
-            image,
-            quote,
-            price,
-            link,
-            linkIntro,
-            key,
-            totalPages,
-        } = req.body;
+  try {
+    const {
+      name,
+      author,
+      tags,
+      description,
+      image,
+      quote,
+      price,
+      link,
+      linkIntro,
+      key,
+      totalPages,
+    } = req.body;
 
-        const { bookId } = req.params;
+    const { bookId } = req.params;
 
-        if (bookId !== "new") {
-            let book = await Book.findById(bookId);
-            if (book) {
-                book.name = name;
-                if (name) {
-                    book.nameNoSign = removeVieCharacters(name);
-                }
-                book.author = author;
-                if (author) {
-                    book.authorNoSign = removeVieCharacters(author);
-                }
-                book.tags = tags;
-                book.description = description;
-                if (description) {
-                    book.descriptionNoSign = removeVieCharacters(description);
-                }
-                book.image = image;
-                book.quote = quote;
-                book.price = price;
-                book.link = link;
-                book.linkIntro = linkIntro;
-                book.key = key;
-                book.totalPages = totalPages;
-
-                await book.save();
-                book = await Book.findById(book._id, [
-                    "_id",
-                    "name",
-                    "key",
-                    "image",
-                    "price",
-                    "description",
-                    "authors",
-                    "quote",
-                    "tags",
-                    "totalPages",
-                    "linkIntro",
-                    "link",
-                ]).populate("tags", ["_id", "name"]);
-                return res.status(200).json(book);
-            }
-            return res.status(404).json({ message: "Not Found" });
-        } else {
-            let book = new Book();
-            book.name = name;
-            if (name) {
-                book.nameNoSign = removeVieCharacters(name);
-            }
-            book.author = author;
-            if (author) {
-                book.authorNoSign = removeVieCharacters(author);
-            }
-            book.tags = tags;
-            book.description = description;
-            if (description) {
-                book.descriptionNoSign = removeVieCharacters(description);
-            }
-            book.image = image;
-            book.quote = quote;
-            book.price = price;
-            book.link = link;
-            book.linkIntro = linkIntro;
-            book.key = key;
-            book.totalPages = totalPages;
-
-            await book.save();
-            book = await Book.findById(book._id, [
-                "_id",
-                "name",
-                "key",
-                "image",
-                "price",
-                "description",
-                "authors",
-                "quote",
-                "tags",
-                "totalPages",
-                "linkIntro",
-                "link",
-            ]).populate("tags", ["_id", "name"]);
-
-            return res.status(200).json(book);
+    if (bookId !== "new") {
+      let book = await Book.findById(bookId);
+      if (book) {
+        book.name = name;
+        if (name) {
+          book.nameNoSign = removeVieCharacters(name);
         }
-    } catch (err) {
-        console.log({ err });
-        res.status(500).json({ message: "Something went wrong" });
+        book.author = author;
+        if (author) {
+          book.authorNoSign = removeVieCharacters(author);
+        }
+        book.tags = tags;
+        book.description = description;
+        if (description) {
+          book.descriptionNoSign = removeVieCharacters(description);
+        }
+        book.image = image;
+        book.quote = quote;
+        book.price = price;
+        book.link = link;
+        book.linkIntro = linkIntro;
+        book.key = key;
+        book.totalPages = totalPages;
+
+        await book.save();
+        book = await Book.findById(book._id, [
+          "_id",
+          "name",
+          "key",
+          "image",
+          "price",
+          "description",
+          "authors",
+          "quote",
+          "tags",
+          "totalPages",
+          "linkIntro",
+          "link",
+        ]).populate("tags", ["_id", "name"]);
+        return res.status(200).json(book);
+      }
+      return res.status(404).json({ message: "Not Found" });
+    } else {
+      let book = new Book();
+      book.name = name;
+      if (name) {
+        book.nameNoSign = removeVieCharacters(name);
+      }
+      book.author = author;
+      if (author) {
+        book.authorNoSign = removeVieCharacters(author);
+      }
+      book.tags = tags;
+      book.description = description;
+      if (description) {
+        book.descriptionNoSign = removeVieCharacters(description);
+      }
+      book.image = image;
+      book.quote = quote;
+      book.price = price;
+      book.link = link;
+      book.linkIntro = linkIntro;
+      book.key = key;
+      book.totalPages = totalPages;
+
+      await book.save();
+      book = await Book.findById(book._id, [
+        "_id",
+        "name",
+        "key",
+        "image",
+        "price",
+        "description",
+        "authors",
+        "quote",
+        "tags",
+        "totalPages",
+        "linkIntro",
+        "link",
+      ]).populate("tags", ["_id", "name"]);
+
+      return res.status(200).json(book);
     }
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 exports.banBook = async function (req, res) {
-    const { is_active } = req.body;
-    try {
-        let book = await Book.findById(req.params.bookId);
-        if (book) {
-            book.is_active = is_active;
-            await book.save();
+  const { is_active } = req.body;
+  try {
+    let book = await Book.findById(req.params.bookId);
+    if (book) {
+      book.is_active = is_active;
+      await book.save();
 
-            return res.status(200).json({ is_active, _id: book._id });
-        }
-        return res.status(404).json({ message: "Not Found" });
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
+      return res.status(200).json({ is_active, _id: book._id });
     }
+    return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 exports.deleteBook = async function (req, res) {
-    try {
-        let book = await Book.findOneAndDelete(req.params.bookId);
-        if (book) {
-            return res.status(200).json(book);
-        }
-        return res.status(404).json({ message: "Not Found" });
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
+  try {
+    let book = await Book.findOneAndDelete(req.params.bookId);
+    if (book) {
+      return res.status(200).json(book);
     }
+    return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 // Category
+exports.getAllCategories = async function (req, res) {
+  try {
+    let categories = await Category.find().select(
+      "_id name thumbnail quote color is_active"
+    );
+    return res.status(200).json(categories);
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 exports.createCategory = async function (req, res) {
+  try {
     // validate request
     if (!req.body) {
-        res.status(400).send({ message: "Content can not be empty!" });
-        return;
+      res.status(400).send({ message: "Content can not be empty!" });
+      return;
     }
+    const { name, quote, thumbnail, color, tags } = req.body;
 
-    var namenosign = removeVieCharacters(req.body.name);
+    var nameNoSign = removeVieCharacters(name);
 
     const category = new Category({
-        name: req.body.name,
-        quote: req.body.quote,
-        nameNoSign: namenosign,
-        thumbnail: req.body.thumbnail,
-        is_active: req.body.status,
+      name,
+      quote,
+      nameNoSign,
+      thumbnail,
+      is_active,
+      color,
+      tags,
     });
 
     // save tag in the database
     await category
-        .save(category)
-        .then((data) => {
-            res.status(200).json(data);
-        })
-        .catch((err) => {
-            res.status(500).send({
-                message: err.message || "Something went wrong",
-            });
+      .save()
+      .then((data) => {
+        res.status(200).json(data);
+      })
+      .catch((err) => {
+        res.status(500).send({
+          message: err.message || "Something went wrong",
         });
+      });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 exports.editCategory = async function (req, res) {
+  try {
+    const { name, quote, thumbnail, color, tags } = req.body;
     if (!req.body) {
-        return res
-            .status(400)
-            .send({ message: "Data to update can not be empty" });
+      return res
+        .status(400)
+        .send({ message: "Data to update can not be empty" });
     }
     const { categoryId } = req.params;
 
     let category = await Category.findById(categoryId);
-    category.name = req.body.name;
-    if (req.body.name) {
-        category.nameNoSign = removeVieCharacters(req.body.name);
+    category.name = name;
+    if (name) {
+      category.nameNoSign = removeVieCharacters(name);
     }
-    category.thumbnail = req.body.thumbnail;
-    category.quote = req.body.quote;
-    category.color = req.body.color;
-    category.is_active = req.body.status;
+    category.thumbnail = thumbnail;
+    category.quote = quote;
+    category.color = color;
+    category.tags = tags;
 
     await category.save();
     return res.status(200).json(category);
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 exports.deleteCategory = async function (req, res) {
-    const id = req.params.categoryId;
+  const id = req.params.categoryId;
 
-    Category.findByIdAndDelete(id)
-        .then((data) => {
-            if (!data) {
-                res.status(404).send({
-                    message: `Cannot Delete with id ${id}`,
-                });
-            } else {
-                res.send({
-                    message: "Tag was deleted successfully!",
-                });
-            }
-        })
-        .catch((err) => {
-            res.status(500).send({
-                message: "Could not delete Tag with id=" + id,
-            });
+  Category.findByIdAndDelete(id)
+    .then((data) => {
+      if (!data) {
+        res.status(404).send({
+          message: `Cannot Delete with id ${id}`,
         });
+      } else {
+        res.send({
+          message: "Tag was deleted successfully!",
+        });
+      }
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: "Could not delete Tag with id=" + id,
+      });
+    });
 };
 
 exports.getCategoryDetail = async function (req, res) {
-    try {
-        let category = await Category.findById(req.params.categoryId, [
-            "_id",
-            "name",
-            "quote",
-            "nameNoSign",
-            "thumbnail",
-        ]);
+  try {
+    let category = await Category.findById(req.params.categoryId, [
+      "_id",
+      "name",
+      "quote",
+      "color",
+      "thumbnail",
+      "tags",
+    ]).populate({
+      path: "tags",
+      match: { is_active: { $eq: 1 } },
+      select: "_id name",
+    });
 
-        return res.status(200).json(category);
-    } catch (err) {
-        return res.status(400).json({ error: "Something went wrong!" });
-    }
+    return res.status(200).json(category);
+  } catch (err) {
+    console.log({ err });
+    return res.status(500).json({ error: "Something went wrong!" });
+  }
 };
 
 exports.banCategory = async function (req, res) {
-    try {
-        const { is_banned } = req.body;
-        let category = await Category.findById(req.params.userId);
-        if (category) {
-            category.is_active = is_banned;
-            await category.save();
+  try {
+    const { is_banned } = req.body;
+    let category = await Category.findById(req.params.userId);
+    if (category) {
+      category.is_active = is_banned;
+      await category.save();
 
-            return res.status(200).json({ is_banned, _id: user._id });
-        }
-        return res.status(404).json({ message: "Not Found" });
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
+      return res.status(200).json({ is_banned, _id: user._id });
     }
+    return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 exports.getTagDetail = async function (req, res) {
-    try {
-        let tag = await Tag.findById(req.params.tagId, [
-            "_id",
-            "name",
-            "description",
-            "category",
-        ]).populate("category", ["_id", "name"]);
-
-        return res.status(200).json(tag);
-    } catch (err) {
-        return res.status(400).json({ error: "Something went wrong!" });
-    }
-};
-
-exports.createTag = async function (req, res) {
-    // validate request
-    if (!req.body) {
-        res.status(400).send({ message: "Content can not be empty!" });
-        return;
-    }
-
-    const tag = new Tag({
-        name: req.body.name,
-        description: req.body.description,
-        category: req.body.category,
-        is_active: req.body.status,
-    });
-
-    // save tag in the database
-    await tag.save(tag);
-
-    var categoryFind = await Category.findById(req.body.category);
-    var categoryMain = await Category.find();
-
-    if (categoryFind) {
-        categoryMain.listTag.push(tag._id);
-    }
-
-    tag = await Tag.findById(tag._id, [
-        "_id",
-        "name",
-        "description",
-        "category",
+  try {
+    let tag = await Tag.findById(req.params.tagId, [
+      "_id",
+      "name",
+      "description",
+      "category",
     ]).populate("category", ["_id", "name"]);
 
     return res.status(200).json(tag);
+  } catch (err) {
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
+};
+
+exports.createTag = async function (req, res) {
+  // validate request
+  if (!req.body) {
+    res.status(400).send({ message: "Content can not be empty!" });
+    return;
+  }
+
+  const tag = new Tag({
+    name: req.body.name,
+    description: req.body.description,
+    category: req.body.category,
+    is_active: req.body.status,
+  });
+
+  // save tag in the database
+  await tag.save(tag);
+
+  var categoryFind = await Category.findById(req.body.category);
+  var categoryMain = await Category.find();
+
+  if (categoryFind) {
+    categoryMain.listTag.push(tag._id);
+  }
+
+  tag = await Tag.findById(tag._id, [
+    "_id",
+    "name",
+    "description",
+    "category",
+  ]).populate("category", ["_id", "name"]);
+
+  return res.status(200).json(tag);
 };
 
 exports.editTag = async function (req, res) {
-    if (!req.body) {
-        return res
-            .status(400)
-            .send({ message: "Data to update can not be empty" });
-    }
-    const { tagId } = req.params;
+  if (!req.body) {
+    return res.status(400).send({ message: "Data to update can not be empty" });
+  }
+  const { tagId } = req.params;
 
-    let tag = await Tag.findById(tagId);
-    tag.name = req.body.name;
-    tag.description = req.body.description;
-    if (req.body.category) {
-        tag.category = req.body.category;
-    }
+  let tag = await Tag.findById(tagId);
+  tag.name = req.body.name;
+  tag.description = req.body.description;
+  if (req.body.category) {
+    tag.category = req.body.category;
+  }
 
-    tag.is_active = req.body.status;
+  tag.is_active = req.body.status;
 
-    await tag.save();
-    return res.status(200).json(tag);
+  await tag.save();
+  return res.status(200).json(tag);
 };
 
 exports.deleteTag = async function (req, res) {
-    const id = req.params.tagId;
+  const id = req.params.tagId;
 
-    Tag.findByIdAndDelete(id)
-        .then((data) => {
-            if (!data) {
-                res.status(404).send({
-                    message: `Cannot Delete with id ${id}`,
-                });
-            } else {
-                res.send({
-                    message: "Tag was deleted successfully!",
-                });
-            }
-        })
-        .catch((err) => {
-            res.status(500).send({
-                message: "Could not delete Tag with id=" + id,
-            });
+  Tag.findByIdAndDelete(id)
+    .then((data) => {
+      if (!data) {
+        res.status(404).send({
+          message: `Cannot Delete with id ${id}`,
         });
+      } else {
+        res.send({
+          message: "Tag was deleted successfully!",
+        });
+      }
+    })
+    .catch((err) => {
+      res.status(500).send({
+        message: "Could not delete Tag with id=" + id,
+      });
+    });
 };
 
 exports.banTag = async function (req, res) {
-    try {
-        const { is_banned } = req.body;
-        let tag = await Tag.findById(req.params.userId);
-        if (tag) {
-            tag.is_active = is_banned;
-            await tag.save();
+  try {
+    const { is_banned } = req.body;
+    let tag = await Tag.findById(req.params.userId);
+    if (tag) {
+      tag.is_active = is_banned;
+      await tag.save();
 
-            return res.status(200).json({ is_banned, _id: user._id });
-        }
-        return res.status(404).json({ message: "Not Found" });
-    } catch (err) {
-        res.status(500).json({ message: "Something went wrong" });
+      return res.status(200).json({ is_banned, _id: user._id });
     }
+    return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
+
 exports.bookStatistical = async function (req, res) {
-    try {
-        let books = await Book.find().select(
-            "price totalRead createdAt totalLike totalDislike"
-        );
-        //NOTE: new
-        const today = new Date();
-        let newBooks = books.filter(
-            (item) =>
-                item.createdAt.getMonth() == today.getMonth() &&
-                item.createdAt.getFullYear() == today.getFullYear()
-        );
-        let totalNewBooks = newBooks.length;
+  try {
+    let books = await Book.find().select(
+      "price totalRead createdAt totalLike totalDislike"
+    );
+    let totalLike = 0;
+    let totalDislike = 0;
+    //NOTE: new
+    const today = new Date();
+    let newBooks = books.filter(
+      (item) =>
+        item.createdAt.getMonth() == today.getMonth() &&
+        item.createdAt.getFullYear() == today.getFullYear()
+    );
+    let totalNewBooks = newBooks.length;
 
-        // Total books
-        let totalBooks = await Book.countDocuments();
+    //NOTE: Total books
+    let totalBooks = books.length;
 
-        // Sold
-        let soldListBook = books.filter((item) => item.totalRead > 0);
-        let soldBooks = soldListBook.length;
+    //NOTE: totalRead
+    let totalRead = 0;
+    books.forEach((element) => {
+      totalRead += element.totalRead;
+      totalLike += element.totalLike;
+      totalDislike += element.totalDislike;
+    });
 
-        return res.status(200).json({ totalNewBooks, totalBooks, soldBooks });
-    } catch (err) {
-        res.status(500).json({ message: err || "Something went wrong" });
+    //NOTE: totalHoa
+    let totalHoa = 0;
+    const transactions = await Transaction.find();
+    transactions.forEach((element) => {
+      if (element.hoa > 0) {
+        totalHoa += element.hoa;
+      }
+    });
+
+    //NOTE: reach
+    let totalReach = 0;
+    const comments = await Comment.find();
+    comments.forEach((element) => {
+      totalReach += 1 + element.replies.length;
+    });
+
+    //NOTE: avg Reach
+    let avgReach = totalReach / totalBooks;
+
+    //NOTE: avg like & dislike
+    let avgLike = totalLike / totalBooks;
+    let avgDislike = totalDislike / totalBooks;
+
+    return res.status(200).json({
+      totalNewBooks,
+      totalBooks,
+      totalRead,
+      totalHoa,
+      totalReach,
+      avgReach,
+      avgLike,
+      avgDislike,
+    });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: err || "Something went wrong" });
+  }
+};
+
+exports.topBooks = async function (req, res) {
+  try {
+    const books = await Book.find({ is_active: 1 });
+    const comments = await Comment.find();
+    let topBooks = [];
+    books.forEach((element) => {
+      let name = element.name;
+      let _id = element._id;
+      let totalRead = element.totalRead;
+      let totalReach = 0;
+      comments
+        .filter((item) => item.book.toString() === element._id.toString())
+        .forEach((element) => {
+          totalReach += 1 + element.replies.length;
+        });
+      let totalReact = element.totalLike + element.totalDislike;
+      let avgReact = 0;
+      if (totalReact !== 0) {
+        avgReact = element.totalLike / totalReact;
+      }
+      let totalPoint = totalRead + totalReact + totalReach;
+      topBooks.push({
+        _id,
+        name,
+        totalRead,
+        totalReach,
+        totalReact,
+        avgReact,
+        totalPoint,
+      });
+    });
+    topBooks.sort(function (a, b) {
+      return b.totalPoint - a.totalPoint;
+    });
+    topBooks = topBooks.slice(0, 7);
+    return res.status(200).json(topBooks);
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: err || "Something went wrong" });
+  }
+};
+
+exports.booksByTags = async function (req, res) {
+  try {
+    const books = await Book.find({ is_active: 1 });
+    let tags = await Tag.find();
+    let data = [];
+    let labels = [];
+    for (let index = 0; index < tags.length; index++) {
+      let element = tags[index];
+      let countBooks = books.filter((item) =>
+        item.tags.includes(element._id)
+      ).length;
+      labels.push(element.name);
+      data.push(countBooks);
     }
+    return res.status(200).json({ labels, data });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: err || "Something went wrong" });
+  }
+};
+
+exports.hoaByMonth = async function (req, res) {
+  try {
+    const transactions = await Transaction.find().sort("-createdAt");
+    const today = new Date();
+    const thisYear = today.getFullYear();
+    const lastYear = thisYear - 1;
+
+    //NOTE: lastMonth
+    let hoaByMonthLastYear = {
+      year: lastYear,
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    };
+    let hoaByMonthThisYear = {
+      year: thisYear,
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    };
+
+    transactions.forEach((element) => {
+      if (element.createdAt.getFullYear() === thisYear) {
+        if (element.hoa > 0) {
+          hoaByMonthThisYear.data[element.createdAt.getMonth()] += element.hoa;
+        }
+      } else if (element.createdAt.getFullYear() === lastYear) {
+        if (element.hoa > 0) {
+          hoaByMonthLastYear.data[element.createdAt.getMonth()] += element.hoa;
+        }
+      } else {
+        return res.status(200).json({ hoaByMonthLastYear, hoaByMonthThisYear });
+      }
+    });
+    return res.status(200).json({ hoaByMonthLastYear, hoaByMonthThisYear });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: err || "Something went wrong" });
+  }
+};
+
+exports.userStatistical = async function (req, res) {
+  try {
+    const users = await Account.find();
+
+    //NOTE: new user
+    const today = new Date();
+    let newUsers = users.filter(
+      (item) =>
+        item.createdAt.getMonth() == today.getMonth() &&
+        item.createdAt.getFullYear() == today.getFullYear()
+    );
+    let totalNewUsers = newUsers.length;
+
+    //NOTE: total Reach
+    let totalReach = 0;
+    const comments = await Comment.find().populate({
+      path: "replies",
+      select: "totalLike totalDislike",
+    });
+    comments.forEach((element) => {
+      totalReach +=
+        1 + element.totalLike + element.totalDislike + element.replies.length;
+      element.replies.forEach((item) => {
+        totalReach += item.totalLike + item.totalDislike;
+      });
+    });
+
+    //NOTE: total Pomodoro
+    let totalHoa = 0;
+    const transactions = await Transaction.find({ type: "pomodoro" });
+    transactions.forEach((element) => {
+      if (element.hoa > 0) {
+        totalHoa += element.hoa;
+      }
+    });
+    let totalHourPomodoro = ((totalHoa * 5) / 60).toFixed(2);
+
+    return res.status(200).json({
+      totalNewUsers,
+      totalReach,
+      totalHoa,
+      totalHourPomodoro,
+    });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: err || "Something went wrong" });
+  }
+};
+
+exports.userByFaculty = async function (req, res) {
+  try {
+    const users = await Account.find();
+    let faculties = [];
+    let userByFaculty = [];
+
+    for (let index = 0; index < users.length; index++) {
+      const element = users[index];
+      let i = faculties.indexOf(element.faculty);
+      if (i > -1) {
+        userByFaculty[i] += 1;
+      } else {
+        faculties.push(element.faculty);
+        userByFaculty.push(1);
+      }
+    }
+
+    return res.status(200).json({ faculties, userByFaculty });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: err || "Something went wrong" });
+  }
+};
+
+exports.userByMonth = async function (req, res) {
+  try {
+    const users = await Account.find().sort("-createdAt");
+    const today = new Date();
+    const thisYear = today.getFullYear();
+    const lastYear = thisYear - 1;
+
+    //NOTE: lastMonth
+    let userByMonthLastYear = {
+      year: lastYear,
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    };
+    let userByMonthThisYear = {
+      year: thisYear,
+      data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    };
+
+    users.forEach((element) => {
+      if (element.createdAt.getFullYear() === thisYear) {
+        userByMonthThisYear.data[element.createdAt.getMonth()] += 1;
+      } else if (element.createdAt.getFullYear() === lastYear) {
+        userByMonthLastYear.data[element.createdAt.getMonth()] += 1;
+      } else {
+        return res
+          .status(200)
+          .json({ userByMonthLastYear, userByMonthThisYear });
+      }
+    });
+
+    return res.status(200).json({ userByMonthLastYear, userByMonthThisYear });
+  } catch (err) {
+    console.log({ err });
+    res.status(500).json({ message: err || "Something went wrong" });
+  }
 };

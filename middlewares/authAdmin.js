@@ -3,7 +3,7 @@ const { validationResult } = require("express-validator");
 const Admin = require("../models/Admin");
 
 const authAdmin = async (req, res, next) => {
-  const token = req.cookies.access_token;
+  const token = req.cookies.access_token_admin;
   const err = validationResult(req);
   if (!err.isEmpty()) {
     return res.status(400).json(err);

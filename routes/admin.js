@@ -27,9 +27,9 @@ router.get("/getCategoryDetail/:categoryId", adminController.getCategoryDetail);
 router.put("/putCategory/:categoryId", authAdmin, adminController.editCategory);
 router.put("/banCategory/:categoryId", authAdmin, adminController.banCategory);
 router.delete(
-    "/deleteCategory/:categoryId",
-    authAdmin,
-    adminController.deleteCategory
+  "/deleteCategory/:categoryId",
+  authAdmin,
+  adminController.deleteCategory
 );
 
 //NOTE: User manage
@@ -37,7 +37,23 @@ router.get("/getAllUser", authAdmin, adminController.getAllUsers);
 router.get("/getUserDetail/:userId", authAdmin, adminController.getUserDetail);
 router.put("/banUser/:userId", authAdmin, adminController.banUser);
 
+//NOTE: Category manage
+router.get("/getAllCategories", authAdmin, adminController.getAllCategories);
+router.get(
+  "/getCategoryDetail/:categoryId",
+  
+  adminController.getCategoryDetail
+);
+router.post("/createCategory", authAdmin, adminController.createCategory);
+router.put("/editCategory", authAdmin, adminController.editCategory);
+
 //NOTE: report
 router.get("/bookStatistical", adminController.bookStatistical);
+router.get("/topBooks", adminController.topBooks);
+router.get("/booksByTags", adminController.booksByTags);
+router.get("/hoaByMonth", adminController.hoaByMonth);
+router.get("/userStatistical", adminController.userStatistical);
+router.get("/userByFaculty", adminController.userByFaculty);
+router.get("/userByMonth", adminController.userByMonth);
 
 module.exports = router;
