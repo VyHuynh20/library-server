@@ -22,8 +22,9 @@ exports.getComment = async function (req, res) {
       if (authUser) {
         comment.user._doc["totalBooks"] = authUser.listBooks.length;
         comment.user._doc["isRead"] =
-          authUser._doc.listBooks.filter((e) => e._id.toString() === bookId)
-            .length > 0;
+          authUser._doc.listBooks.filter(
+            (e) => e._id.toString() === comment.book.toString()
+          ).length > 0;
       }
 
       //NOTE: check react of user
