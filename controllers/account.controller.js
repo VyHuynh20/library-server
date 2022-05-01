@@ -9,85 +9,97 @@ const Account = require("../models/Account");
 
 exports.loginGoogle = async function (req, res) {
   const { tokenId } = req.body;
-  client
-    .verifyIdToken({
-      idToken: tokenId,
-      audience:
-        "168686532840-8f6as6ppblu170r1v0f337cvpq29l43f.apps.googleusercontent.com",
-    })
-    .then((response) => {
-      const { email_verified, email, name, picture } = response.payload;
-      // console.log(response.payload);
+  console.log(tokenId);
+  if (tokenId) {
+    try {
+      client
+        .verifyIdToken({
+          idToken: tokenId,
+          audience:
+            "168686532840-8f6as6ppblu170r1v0f337cvpq29l43f.apps.googleusercontent.com",
+        })
+        .then((response) => {
+          const { email_verified, email, name, picture } = response.payload;
+          // console.log(response.payload);
 
-      if (email_verified) {
-        Account.findOne({ email }).exec((err, account) => {
-          if (err) {
-            return res.status(400).json({
-              error: "Something went wrong",
-            });
-          } else {
-            if (account) {
-              if (account.is_banned) {
-                return res
-                  .status(403)
-                  .json({ message: "Tài khoản đã bị khóa!" });
-              }
+          if (email_verified) {
+            Account.findOne({ email }).exec((err, account) => {
+              if (err) {
+                return res.status(400).json({
+                  error: "Something went wrong",
+                });
+              } else {
+                if (account) {
+                  if (account.is_banned) {
+                    return res
+                      .status(403)
+                      .json({ message: "Tài khoản đã bị khóa!" });
+                  }
 
-              const token = jwt.sign(
-                { _id: account._id },
-                process.env.JWT_SECRET,
-                { expiresIn: "24h" }
-              );
-              const { _id, name, email, avatar, hoa } = account;
+                  const token = jwt.sign(
+                    { _id: account._id },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "24h" }
+                  );
+                  const { _id, name, email, avatar, hoa } = account;
 
-              res.cookie("access_token", token, {
-                maxAge: 24 * 60 * 60 * 100,
-                httpOnly: true,
-                // secure: true;
-              });
+                  res.cookie("access_token", token, {
+                    maxAge: 24 * 60 * 60 * 100,
+                    httpOnly: true,
+                    // secure: true;
+                  });
 
-              res.status(200).json({
-                user: { _id, name, email, avatar, hoa },
-              });
-            } else {
-              const newAccount = new Account({
-                email: email,
-                fullName: name,
-                avatarGoogle: picture,
-                avatar: picture,
-              });
-              console.log(newAccount);
+                  res.status(200).json({
+                    user: { _id, name, email, avatar, hoa },
+                  });
+                } else {
+                  const newAccount = new Account({
+                    email: email,
+                    fullName: name,
+                    avatarGoogle: picture,
+                    avatar: picture,
+                  });
+                  console.log(newAccount);
 
-              newAccount.save((err, data) => {
-                if (err) {
-                  console.log(err);
-                  return res.status(400).json({
-                    error: "Something went wrong",
+                  newAccount.save((err, data) => {
+                    if (err) {
+                      console.log(err);
+                      return res.status(400).json({
+                        error: "Something went wrong",
+                      });
+                    }
+
+                    const token = jwt.sign(
+                      { _id: data._id },
+                      process.env.JWT_SECRET,
+                      { expiresIn: "24h" }
+                    );
+                    const { _id, name, email, avatar, hoa } = newAccount;
+
+                    res.cookie("access_token", token, {
+                      maxAge: 24 * 60 * 60 * 100,
+                      httpOnly: true,
+                      // secure: true;
+                    });
+                    console.log({ res });
+                    res.status(200).json({
+                      user: { _id, name, email, avatar, hoa },
+                    });
                   });
                 }
-
-                const token = jwt.sign(
-                  { _id: data._id },
-                  process.env.JWT_SECRET,
-                  { expiresIn: "24h" }
-                );
-                const { _id, name, email, avatar, hoa } = newAccount;
-
-                res.cookie("access_token", token, {
-                  maxAge: 24 * 60 * 60 * 100,
-                  httpOnly: true,
-                  // secure: true;
-                });
-                console.log({ res });
-                res.status(200).json({
-                  user: { _id, name, email, avatar, hoa },
-                });
-              });
-            }
+              }
+            });
           }
+        })
+        .catch((e) => {
+          res.status(400).json({message: e.message});
         });
-      }
-    });
+    } catch (error) {
+      res.status(400).json({message: "bad request"});
+    }
+  } else {
+    res.status(400).json({message: "bad request"});
+  }
 };
 
 exports.getAccountById = async function (account) {

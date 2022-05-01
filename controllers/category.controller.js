@@ -3,7 +3,7 @@ const Tag = require("../models/Tag");
 
 exports.listCategory = async function (req, res) {
   var categories = await Category.find({ is_active: 1 })
-    .select("_id thumbnail color quote tags")
+    .select("_id name thumbnail color quote tags")
     .populate({
       path: "tags",
       match: { is_active: { $eq: 1 } },
