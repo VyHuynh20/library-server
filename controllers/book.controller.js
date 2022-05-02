@@ -1,6 +1,7 @@
 const Account = require("../models/Account");
 const Book = require("../models/Book");
 const Tag = require("../models/Tag");
+const Comment = require("../models/Comment");
 
 const jwt = require("jsonwebtoken");
 
@@ -9,6 +10,7 @@ const authUser = require("../middlewares/authUser");
 const isLoggedIn = require("../middlewares/isLoggedIn");
 const BookInBookcase = require("../models/BookInBookcase");
 const { checkUser } = require("../handlers/authorization");
+const groupBy = require("../handlers/groupBy");
 
 exports.listBook = async function (req, res) {
   // Book.find({})
@@ -293,6 +295,73 @@ exports.postReact = async function (req, res) {
       return res.status(200).json(book);
     }
     return res.status(400).json({ message: "Not Found" });
+  } catch (e) {
+    return res.status(400).json({ error: "Something went wrong!" });
+  }
+};
+
+exports.getBooksTrending = async function (req, res) {
+  console.log(">>> get books trending");
+  const TIME = 12;
+  //day of 1 month ago
+  try {
+    let dateOfMonthAgo = new Date();
+    dateOfMonthAgo.setMonth(dateOfMonthAgo.getMonth() - TIME);
+    let iSODateOfMonthAgo = dateOfMonthAgo.toISOString();
+
+    //get all books have updatedAt greater than day of 1 month ago
+    let books = await Book.find({
+      updatedAt: { $gte: iSODateOfMonthAgo },
+    }).select("_id name image author totalLike totalDislike totalRead");
+
+    //map id books list
+    let booksId = books.map((item, index) => item._id);
+
+    //get all comments have updatedAt greater than day of 1 month ago and book include in books list
+    let comments = await Comment.find({
+      updatedAt: { $gte: iSODateOfMonthAgo },
+      book: { $in: booksId },
+    }).select("_id book replies totalLike totalDislike");
+
+    //filter by book Id
+    let commentGroupByBook = groupBy("book", comments);
+
+    //calculate the popularity of the books
+    let popularityBooks = [];
+    books.forEach((book) => {
+      let totalReact = 0;
+      let totalComment = 0;
+      let commentsOfBook = commentGroupByBook.find(
+        (c) => c.book.toString() == book._id.toString()
+      );
+      if (commentsOfBook) {
+        totalComment = commentsOfBook.items.length;
+        commentsOfBook.items.forEach((comment) => {
+          totalReact +=
+            comment.totalLike + comment.totalDislike + comment.replies.length;
+        });
+      }
+      let rate =
+        book.totalLike +
+        book.totalDislike +
+        book.totalRead +
+        totalReact +
+        totalComment;
+
+      popularityBooks.push({
+        ...book._doc,
+        rate,
+        totalComment,
+        totalReact,
+      });
+    });
+
+    popularityBooks.sort((a, b) => b.rate - a.rate);
+    if(popularityBooks.length > 10){
+      popularityBooks = popularityBooks.slice(0, 10);
+    }
+
+    return res.status(200).json(popularityBooks);
   } catch (e) {
     return res.status(400).json({ error: "Something went wrong!" });
   }
