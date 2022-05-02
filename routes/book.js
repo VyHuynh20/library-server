@@ -17,4 +17,6 @@ router.post("/search/", bookController.search);
 //NOTE: post react
 router.post("/reacts/:_id", authUser, bookController.postReact);
 
+router.get("/trending", bookController.getBooksTrending);
+
 module.exports = router;
