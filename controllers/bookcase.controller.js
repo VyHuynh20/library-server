@@ -52,7 +52,12 @@ exports.listBookInBookcase = async function (req, res) {
   console.log(">>> get books in bookcase");
   const user = res.locals.account;
   Bookcase.find({ user: user._id }, ["user", "book", "progress"])
-    .populate("book", ["_id", "name", "authors", "tags", "image"])
+    .populate({
+      path: "book",
+      select: ["_id", "name", "authors", "tags", "image"],
+      populate: { path: "tags" },
+    })
+
     .then((bookcase) => {
       res.status(200).json(bookcase);
     })
@@ -65,6 +70,7 @@ exports.listBookInBookcase = async function (req, res) {
 exports.deleteBook = async function (req, res) {
   const user = res.locals.account;
   const { bookId } = req.params;
+  console.log("remove " + bookId);
   try {
     const bookcase = await Bookcase.deleteMany({
       user: user._id,
@@ -74,7 +80,7 @@ exports.deleteBook = async function (req, res) {
     if (bookcase) {
       let newUser = await Account.findById(user._id).populate({
         path: "listNotes",
-        select: "_id book",
+        select: "_id book ",
       });
       console.log({ newUser });
       newUser.listBooks = newUser._doc.listBooks.filter(

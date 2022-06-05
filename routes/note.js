@@ -5,6 +5,7 @@ const authUser = require("../middlewares/authUser");
 const router = express.Router();
 
 router.get("/", authUser, noteController.getNotesByAccountId);
+router.get("/getAll", authUser, noteController.getNotesByAccountIdForMobile);
 router.get("/getDetail/:_id", authUser, noteController.getNoteDetail);
 router.get(
   "/getNotesActive/",

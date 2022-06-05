@@ -62,7 +62,7 @@ exports.detailBook = async function (req, res) {
       "image",
       "price",
       "description",
-      "authors",
+      "author",
       "quote",
       "tags",
       "totalRead",

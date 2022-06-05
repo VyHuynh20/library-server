@@ -41,7 +41,7 @@ exports.loginGoogle = async function (req, res) {
                     process.env.JWT_SECRET,
                     { expiresIn: "24h" }
                   );
-                  const { _id, name, email, avatar, hoa } = account;
+                  const { _id, name, email, avatar, hoa, cover } = account;
 
                   res.cookie("access_token", token, {
                     maxAge: 24 * 60 * 60 * 100,
@@ -50,7 +50,7 @@ exports.loginGoogle = async function (req, res) {
                   });
 
                   res.status(200).json({
-                    user: { _id, name, email, avatar, hoa },
+                    user: { _id, name, email, avatar, hoa, cover },
                   });
                 } else {
                   const newAccount = new Account({
@@ -58,6 +58,7 @@ exports.loginGoogle = async function (req, res) {
                     fullName: name,
                     avatarGoogle: picture,
                     avatar: picture,
+                    cover: picture
                   });
                   console.log(newAccount);
 
@@ -74,7 +75,7 @@ exports.loginGoogle = async function (req, res) {
                       process.env.JWT_SECRET,
                       { expiresIn: "24h" }
                     );
-                    const { _id, name, email, avatar, hoa } = newAccount;
+                    const { _id, name, email, avatar, hoa, cover } = newAccount;
 
                     res.cookie("access_token", token, {
                       maxAge: 24 * 60 * 60 * 100,
@@ -83,7 +84,7 @@ exports.loginGoogle = async function (req, res) {
                     });
                     console.log({ res });
                     res.status(200).json({
-                      user: { _id, name, email, avatar, hoa },
+                      user: { _id, name, email, avatar, hoa, cover },
                     });
                   });
                 }
