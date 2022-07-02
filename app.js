@@ -14,7 +14,7 @@ const app = express();
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ['http://localhost:3000'], //Chan tat ca cac domain khac ngoai domain nay
+    origin: ['http://localhost:3000', 'http://localhost:5000'], //Chan tat ca cac domain khac ngoai domain nay
     credentials: true, //Để bật cookie HTTP qua CORS
   })
 );
@@ -41,6 +41,11 @@ const adminRoute = require("./routes/admin");
 app.get("/", (req, res) => {
   res.send("Library Management");
 });
+// app.all('/', function(req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header("Access-Control-Allow-Headers", "X-Requested-With");
+//   next()
+// });
 app.use("/accounts", accountRoute);
 app.use("/books", bookRoute);
 app.use("/tags", tagRoute);

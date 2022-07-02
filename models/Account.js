@@ -33,6 +33,13 @@ const AccountSchema = mongoose.Schema({
     default: 0,
   },
 
+  favoriteTags: [
+    {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: "Tag",
+    },
+  ],
+
   listBooks: [
     {
       type: mongoose.SchemaTypes.ObjectId,

@@ -146,7 +146,9 @@ exports.getAllUsers = async function (req, res) {
 
 exports.getUserDetail = async function (req, res) {
   try {
-    let user = await Account.findById(req.params.userId);
+    let user = await Account.findById(req.params.userId)
+      .populate("listBooks", "_id image name")
+      .populate("favoriteTags", "_id name");
     const transaction = await Transaction.find({
       user: user._id,
       type: "pomodoro",
@@ -235,7 +237,7 @@ exports.putBook = async function (req, res) {
           "totalPages",
           "linkIntro",
           "link",
-          "is_active"
+          "is_active",
         ]).populate("tags", ["_id", "name"]);
         return res.status(200).json(book);
       }
@@ -277,7 +279,7 @@ exports.putBook = async function (req, res) {
         "totalPages",
         "linkIntro",
         "link",
-        "is_active"
+        "is_active",
       ]).populate("tags", ["_id", "name"]);
 
       return res.status(200).json(book);
