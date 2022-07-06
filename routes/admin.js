@@ -14,6 +14,7 @@ router.get("/getBookDetail/:bookId", authAdmin, adminController.getBookDetail);
 router.put("/putBook/:bookId", authAdmin, adminController.putBook);
 router.put("/banBook/:bookId", authAdmin, adminController.banBook);
 router.delete("/deleteBook/:bookId", authAdmin, adminController.deleteBook);
+router.post("/postBook", authAdmin, adminController.postBook);
 
 //NOTE: Tag manage
 router.get("/getAllTags", authAdmin, adminController.getTags);
@@ -36,6 +37,7 @@ router.delete(
 router.get("/getAllUser", authAdmin, adminController.getAllUsers);
 router.get("/getUserDetail/:userId", authAdmin, adminController.getUserDetail);
 router.put("/banUser/:userId", authAdmin, adminController.banUser);
+router.put("/modifyUser", authAdmin, adminController.modifyUser);
 
 //NOTE: Category manage
 router.get("/getAllCategories", authAdmin, adminController.getAllCategories);

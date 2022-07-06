@@ -1,5 +1,15 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { bucket, uploadFirebase } = require("../config/firebase");
+const { saveFile, readFile } = require("../handlers/fileHandler");
+const mime = require("mime-types");
+var path = require("path");
+const { v4: uuidv4 } = require("uuid");
+const {
+  readFilePdfByUrl,
+  readFilePdfByFilePath,
+} = require("../handlers/pdf-upload");
+const removeTemp = require("../handlers/removeTemp");
 const removeVieCharacters = require("../handlers/removeVie");
 const comparePassword = require("../middlewares/comparePassword");
 const hashPassword = require("../middlewares/hashPassword");
@@ -79,7 +89,7 @@ exports.getAllBooks = async function (req, res) {
         select: "_id name",
       })
       .select(
-        "_id name tags price totalRead totalLike totalDislike  is_active"
+        "_id name image tags price totalRead totalLike totalDislike  is_active"
       );
     const comments = await Comment.find();
     for (let index = 0; index < books.length; index++) {
@@ -113,9 +123,28 @@ exports.getBookDetail = async function (req, res) {
       "tags",
       "totalPages",
       "linkIntro",
+      "totalRead",
+      "totalLike",
+      "totalDislike",
       "link",
+      "is_active",
     ]).populate("tags", ["_id", "name"]);
-
+    let totalComments = 0;
+    let listComments = [];
+    const comments = await Comment.find({ book: book._id.toString() })
+      .select("_id user content status type")
+      .populate({ path: "user", select: "_id avatar name nickname email" })
+      .populate({
+        path: "replies",
+        select: "_id user content status",
+        populate: { path: "user", select: "_id avatar name nickname email" },
+      });
+    comments.forEach((item) => {
+      listComments = [...listComments, ...[item], ...item.replies];
+      totalComments += 1 + item.replies.length;
+    });
+    book._doc.totalComments = totalComments;
+    book._doc.listComments = listComments;
     return res.status(200).json(book);
   } catch (err) {
     return res.status(400).json({ error: "Something went wrong!" });
@@ -177,6 +206,166 @@ exports.banUser = async function (req, res) {
     }
     return res.status(404).json({ message: "Not Found" });
   } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.modifyUser = async function (req, res) {
+  console.log(req.body);
+  try {
+    const { _id, name, avatar, nickname, faculty, gender, email, dob } =
+      req.body;
+    let exitUser = await Account.findOne({ email: email });
+    let user = await Account.findById(_id);
+    if (exitUser && exitUser._id.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: "Email is exit!" });
+    }
+    if (user) {
+      user.nickname = nickname;
+      user.faculty = faculty;
+      user.name = name;
+      user.email = email;
+      user.avatar = avatar;
+      user.dob = dob;
+      user.gender = gender;
+      await user.save();
+      return res.status(200).json(user);
+    }
+    return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+exports.postBook = async function (req, res) {
+  try {
+    const { thumbnail, pdf } = req.files;
+    console.log({ thumbnail, pdf });
+    const { detail } = req.body;
+    let bookDesc;
+    const pdfFilename = "pdf/src/test.pdf";
+    const file = await readFile(pdf.tempFilePath);
+    await saveFile(pdfFilename, file);
+    removeTemp(pdf.tempFilePath);
+    if (detail) {
+      bookDesc = JSON.parse(detail);
+    } else {
+      return res.status(405).json({ message: "miss Book detail!" });
+    }
+    let nameForUpload = "test";
+    let passwordForEncrypting = uuidv4();
+
+    if (thumbnail) {
+      const thumbnailFilename =
+        "pdf/src/thumbnail" + path.extname(thumbnail.name);
+      console.log(">> save " + thumbnailFilename);
+      const file = await readFile(thumbnail.tempFilePath);
+      await saveFile(thumbnailFilename, file);
+      removeTemp(thumbnail.tempFilePath);
+      console.log(">> post " + thumbnailFilename + " into firebase");
+      const url = await uploadFirebase(
+        thumbnailFilename,
+        "books/intro/" + nameForUpload
+      );
+      console.log({ thumbnailUrl: url });
+      bookDesc.image = url;
+
+      const { docPath, introPath } = await readFilePdfByFilePath(
+        pdfFilename,
+        bookDesc.key,
+        false,
+        passwordForEncrypting
+      );
+      if (introPath) {
+        const introUrl = await uploadFirebase(
+          introPath,
+          "books/intro/" + nameForUpload
+        );
+        console.log({ introUrl });
+        bookDesc.linkIntro = introUrl;
+      } else {
+        return res.status(407).json({ message: "Create intro failure" });
+      }
+      if (docPath) {
+        const docUrl = await uploadFirebase(
+          docPath,
+          "books/pdf/" + nameForUpload
+        );
+        console.log({ docUrl });
+        bookDesc.link = docUrl;
+        bookDesc.key = passwordForEncrypting;
+      } else {
+        return res
+          .status(408)
+          .json({ message: "Create encrypting Pdf failure" });
+      }
+    } else {
+      const { thumbnailPath, docPath, introPath } = await readFilePdfByFilePath(
+        pdfFilename,
+        bookDesc.key,
+        true,
+        passwordForEncrypting
+      );
+      if (thumbnailPath) {
+        const thumbnailUrl = await uploadFirebase(
+          thumbnailPath,
+          "books/images/test"
+        );
+        console.log({ thumbnailUrl });
+        bookDesc.image = thumbnailUrl;
+      } else {
+        return res.status(406).json({ message: "Create thumbnail failure" });
+      }
+      if (introPath) {
+        const introUrl = await uploadFirebase(
+          introPath,
+          "books/intro/" + nameForUpload
+        );
+        console.log({ introUrl });
+        bookDesc.linkIntro = introUrl;
+      } else {
+        return res.status(407).json({ message: "Create intro failure" });
+      }
+      if (docPath) {
+        const docUrl = await uploadFirebase(
+          docPath,
+          "books/pdf/" + nameForUpload
+        );
+        console.log({ docUrl });
+        bookDesc.link = docUrl;
+        bookDesc.key = passwordForEncrypting;
+      } else {
+        return res
+          .status(408)
+          .json({ message: "Create encrypting Pdf failure" });
+      }
+    }
+    // const filename = "pdf/src/test.pdf";
+    // const file = await readFile(pdf.tempFilePath);
+    // await saveFile(filename, file);
+
+    // const result = await readFilePdfByFilePath(filename, null, true, "tinnt");
+    // console.log({ result });
+    // const { thumbnailPath, docPath, introPath } = result;
+    // if (thumbnailPath) {
+    //   const thumbnailUrl = await uploadFirebase(
+    //     thumbnailPath,
+    //     "books/images/test"
+    //   );
+    //   console.log({ thumbnailUrl });
+    // }
+    // if (introPath) {
+    //   const introUrl = await uploadFirebase(introPath, "books/intro/test");
+    //   console.log({ introUrl });
+    // }
+    // if (docPath) {
+    //   const docUrl = await uploadFirebase(docPath, "books/pdf/test");
+    //   console.log({ docUrl });
+    // }
+    console.log({ bookDesc });
+    return res.status(200).json(bookDesc);
+  } catch (err) {
+    console.log({ err });
     res.status(500).json({ message: "Something went wrong" });
   }
 };
@@ -654,6 +843,8 @@ exports.topBooks = async function (req, res) {
     let topBooks = [];
     books.forEach((element) => {
       let name = element.name;
+      let author = element.author;
+      let image = element.image;
       let _id = element._id;
       let totalRead = element.totalRead;
       let totalReach = 0;
@@ -665,12 +856,14 @@ exports.topBooks = async function (req, res) {
       let totalReact = element.totalLike + element.totalDislike;
       let avgReact = 0;
       if (totalReact !== 0) {
-        avgReact = element.totalLike / totalReact;
+        avgReact = Math.round((100 * element.totalLike) / totalReact);
       }
       let totalPoint = totalRead + totalReact + totalReach;
       topBooks.push({
         _id,
         name,
+        author,
+        image,
         totalRead,
         totalReach,
         totalReact,
@@ -681,7 +874,7 @@ exports.topBooks = async function (req, res) {
     topBooks.sort(function (a, b) {
       return b.totalPoint - a.totalPoint;
     });
-    topBooks = topBooks.slice(0, 7);
+    topBooks = topBooks.slice(0, 10);
     return res.status(200).json(topBooks);
   } catch (err) {
     console.log({ err });
@@ -753,12 +946,12 @@ exports.userStatistical = async function (req, res) {
 
     //NOTE: new user
     const today = new Date();
-    let newUsers = users.filter(
-      (item) =>
-        item.createdAt.getMonth() == today.getMonth() &&
-        item.createdAt.getFullYear() == today.getFullYear()
-    );
-    let totalNewUsers = newUsers.length;
+    // let newUsers = users.filter(
+    //   (item) =>
+    //     item.createdAt.getMonth() == today.getMonth() &&
+    //     item.createdAt.getFullYear() == today.getFullYear()
+    // );
+    let totalNewUsers = users.length;
 
     //NOTE: total Reach
     let totalReach = 0;

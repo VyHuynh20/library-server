@@ -7,6 +7,7 @@ const multer = require("multer");
 const firebase = require("./config/firebase");
 const uploadFile = require("./handlers/upload-file");
 const cookieParser = require("cookie-parser");
+const fileupload = require("express-fileupload");
 
 require("dotenv").config();
 
@@ -14,8 +15,14 @@ const app = express();
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'http://localhost:5000'], //Chan tat ca cac domain khac ngoai domain nay
+    origin: ["http://localhost:3000", "http://localhost:5000"], //Chan tat ca cac domain khac ngoai domain nay
     credentials: true, //Để bật cookie HTTP qua CORS
+  })
+);
+
+app.use(
+  fileupload({
+    useTempFiles: true,
   })
 );
 
