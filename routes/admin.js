@@ -15,6 +15,11 @@ router.put("/putBook/:bookId", authAdmin, adminController.putBook);
 router.put("/banBook/:bookId", authAdmin, adminController.banBook);
 router.delete("/deleteBook/:bookId", authAdmin, adminController.deleteBook);
 router.post("/postBook", authAdmin, adminController.postBook);
+router.post(
+  "/checkExistBookName",
+  authAdmin,
+  adminController.checkExistBookName
+);
 
 //NOTE: Tag manage
 router.get("/getAllTags", authAdmin, adminController.getTags);

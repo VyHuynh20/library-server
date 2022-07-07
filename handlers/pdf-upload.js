@@ -121,7 +121,7 @@ async function readFilePdfByFilePath(filename, key, createThumbnail, password) {
       .then(function () {
         // PDFNet.shutdown();
         console.log({ page });
-        resolve({ docPath, introPath, thumbnailPath });
+        resolve({ docPath, introPath, thumbnailPath, totalPages: page });
       });
   });
 }

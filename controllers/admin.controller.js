@@ -83,14 +83,10 @@ exports.reSign = async function (req, res) {
 
 exports.getAllBooks = async function (req, res) {
   try {
-    let books = await Book.find()
-      .populate({
-        path: "tags",
-        select: "_id name",
-      })
-      .select(
-        "_id name image tags price totalRead totalLike totalDislike  is_active"
-      );
+    let books = await Book.find().populate({
+      path: "tags",
+      select: "_id name",
+    });
     const comments = await Comment.find();
     for (let index = 0; index < books.length; index++) {
       let element = books[index];
@@ -237,21 +233,53 @@ exports.modifyUser = async function (req, res) {
   }
 };
 
+exports.checkExistBookName = async function (req, res) {
+  try {
+    const { name } = req.body;
+    nameNoSign = removeVieCharacters(name);
+    if (name) {
+      const existBook = await Book.find({ nameNoSign: nameNoSign });
+      if (existBook.length > 0) {
+        return res.status(406).json({ message: "name book is exist!" });
+      } else {
+        return res.status(200).json({});
+      }
+    } else {
+      return res.status(403).json({ message: "bad request!" });
+    }
+  } catch (e) {
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 exports.postBook = async function (req, res) {
   try {
     const { thumbnail, pdf } = req.files;
-    console.log({ thumbnail, pdf });
     const { detail } = req.body;
     let bookDesc;
-    const pdfFilename = "pdf/src/test.pdf";
-    const file = await readFile(pdf.tempFilePath);
-    await saveFile(pdfFilename, file);
-    removeTemp(pdf.tempFilePath);
+    let pdfFilename;
+    if (pdf) {
+      pdfFilename = "pdf/src/test.pdf";
+      const file = await readFile(pdf.tempFilePath);
+      await saveFile(pdfFilename, file);
+      removeTemp(pdf.tempFilePath);
+    }else{
+      return res.status(410).json({ message: "miss Book file!" });
+    }
     if (detail) {
       bookDesc = JSON.parse(detail);
     } else {
       return res.status(405).json({ message: "miss Book detail!" });
     }
+
+    bookDesc.nameNoSign = removeVieCharacters(bookDesc.name);
+    bookDesc.authorNoSign = removeVieCharacters(bookDesc.author);
+    //check exist book;
+    const existBook = await Book.find({ nameNoSign: bookDesc.nameNoSign });
+    if (existBook.length > 0) {
+      return res.status(406).json({ message: "name book is exist!" });
+    }
+
     let nameForUpload = "test";
     let passwordForEncrypting = uuidv4();
 
@@ -270,7 +298,7 @@ exports.postBook = async function (req, res) {
       console.log({ thumbnailUrl: url });
       bookDesc.image = url;
 
-      const { docPath, introPath } = await readFilePdfByFilePath(
+      const { docPath, introPath, totalPages } = await readFilePdfByFilePath(
         pdfFilename,
         bookDesc.key,
         false,
@@ -299,13 +327,15 @@ exports.postBook = async function (req, res) {
           .status(408)
           .json({ message: "Create encrypting Pdf failure" });
       }
+      bookDesc.totalPages = totalPages;
     } else {
-      const { thumbnailPath, docPath, introPath } = await readFilePdfByFilePath(
-        pdfFilename,
-        bookDesc.key,
-        true,
-        passwordForEncrypting
-      );
+      const { thumbnailPath, docPath, introPath, totalPages } =
+        await readFilePdfByFilePath(
+          pdfFilename,
+          bookDesc.key,
+          true,
+          passwordForEncrypting
+        );
       if (thumbnailPath) {
         const thumbnailUrl = await uploadFirebase(
           thumbnailPath,
@@ -314,7 +344,7 @@ exports.postBook = async function (req, res) {
         console.log({ thumbnailUrl });
         bookDesc.image = thumbnailUrl;
       } else {
-        return res.status(406).json({ message: "Create thumbnail failure" });
+        return res.status(407).json({ message: "Create thumbnail failure" });
       }
       if (introPath) {
         const introUrl = await uploadFirebase(
@@ -324,7 +354,7 @@ exports.postBook = async function (req, res) {
         console.log({ introUrl });
         bookDesc.linkIntro = introUrl;
       } else {
-        return res.status(407).json({ message: "Create intro failure" });
+        return res.status(408).json({ message: "Create intro failure" });
       }
       if (docPath) {
         const docUrl = await uploadFirebase(
@@ -336,34 +366,31 @@ exports.postBook = async function (req, res) {
         bookDesc.key = passwordForEncrypting;
       } else {
         return res
-          .status(408)
+          .status(409)
           .json({ message: "Create encrypting Pdf failure" });
       }
+      bookDesc.totalPages = totalPages;
     }
-    // const filename = "pdf/src/test.pdf";
-    // const file = await readFile(pdf.tempFilePath);
-    // await saveFile(filename, file);
-
-    // const result = await readFilePdfByFilePath(filename, null, true, "tinnt");
-    // console.log({ result });
-    // const { thumbnailPath, docPath, introPath } = result;
-    // if (thumbnailPath) {
-    //   const thumbnailUrl = await uploadFirebase(
-    //     thumbnailPath,
-    //     "books/images/test"
-    //   );
-    //   console.log({ thumbnailUrl });
-    // }
-    // if (introPath) {
-    //   const introUrl = await uploadFirebase(introPath, "books/intro/test");
-    //   console.log({ introUrl });
-    // }
-    // if (docPath) {
-    //   const docUrl = await uploadFirebase(docPath, "books/pdf/test");
-    //   console.log({ docUrl });
-    // }
     console.log({ bookDesc });
-    return res.status(200).json(bookDesc);
+
+    //create new Book
+    let book = new Book({ ...bookDesc });
+    await book.save();
+    // book.name = bookDesc.name;
+    // book.author = bookDesc.author;
+    // book.nameNoSign = bookDesc.nameNoSign;
+    // book.authorNoSign = bookDesc.authorNoSign;
+    // book.quote = bookDesc.quote;
+    // book.description = bookDesc.description;
+    // book.price = bookDesc.price;
+    // book.key = bookDesc.key;
+    // book.tags = bookDesc.tags;
+    // book.image = bookDesc.image;
+    // book.link = bookDesc.link;
+    // book.linkIntro = bookDesc.linkIntro;
+    // book.totalPages = bookDesc.totalPages;
+
+    return res.status(200).json(book);
   } catch (err) {
     console.log({ err });
     res.status(500).json({ message: "Something went wrong" });
