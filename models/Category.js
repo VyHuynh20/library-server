@@ -5,7 +5,7 @@ const CategorySchema = mongoose.Schema({
         type: String,
         trim: true,
     },
-    namenosign: {
+    nameNoSign: {
         type: String,
         trim: true,
     },

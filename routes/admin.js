@@ -27,6 +27,7 @@ router.get("/getTagDetail/:tagId", adminController.getTagDetail);
 router.put("/putTag/:tagId", adminController.editTag);
 router.put("/banTag/:tagId", authAdmin, adminController.banTag);
 router.delete("/deleteTag/:tagId", authAdmin, adminController.deleteTag);
+router.post("/checkExistTagName", authAdmin, adminController.checkExistTagName);
 
 //NOTE: Category manage
 router.get("/getCategoryDetail/:categoryId", adminController.getCategoryDetail);
@@ -36,6 +37,11 @@ router.delete(
   "/deleteCategory/:categoryId",
   authAdmin,
   adminController.deleteCategory
+);
+router.post(
+  "/checkExistCategoryName",
+  authAdmin,
+  adminController.checkExistCategoryName
 );
 
 //NOTE: User manage

@@ -554,6 +554,27 @@ exports.getAllCategories = async function (req, res) {
   }
 };
 
+exports.checkExistCategoryName = async function (req, res) {
+  try {
+    const { name } = req.body;
+    nameNoSign = removeVieCharacters(name);
+    console.log({ nameNoSign });
+    if (name) {
+      const existCategory = await Category.find({ nameNoSign: nameNoSign });
+      console.log({existCategory});
+      if (existCategory.length > 0) {
+        return res.status(406).json({ message: "name category is exist!" });
+      } else {
+        return res.status(200).json({});
+      }
+    } else {
+      return res.status(403).json({ message: "bad request!" });
+    }
+  } catch (e) {
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 exports.createCategory = async function (req, res) {
   try {
     // validate request
@@ -564,6 +585,10 @@ exports.createCategory = async function (req, res) {
     const { name, quote, thumbnail, color, tags } = req.body;
 
     var nameNoSign = removeVieCharacters(name);
+    const existCategory = await Category.find({ nameNoSign: nameNoSign });
+    if (existCategory.length > 0) {
+      return res.status(406).json({ message: "name category is exist!" });
+    }
 
     let category = new Category({
       name,
@@ -728,6 +753,24 @@ exports.getTagDetail = async function (req, res) {
   }
 };
 
+exports.checkExistTagName = async function (req, res) {
+  try {
+    const { name } = req.body;
+    if (name) {
+      const existTag = await Tag.find({ name: name });
+      if (existTag.length > 0) {
+        return res.status(406).json({ message: "name tag is exist!" });
+      } else {
+        return res.status(200).json({});
+      }
+    } else {
+      return res.status(403).json({ message: "bad request!" });
+    }
+  } catch (e) {
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 exports.createTag = async function (req, res) {
   // validate request
   if (!req.body) {
@@ -737,6 +780,11 @@ exports.createTag = async function (req, res) {
 
   const { name, description } = req.body;
 
+  const existTag = await Tag.find({ name: name });
+  if (existTag.length > 0) {
+    return res.status(406).json({ message: "name tag is exist!" });
+  }
+
   const tag = new Tag({
     name: name,
     description: description,
@@ -744,8 +792,9 @@ exports.createTag = async function (req, res) {
 
   // save tag in the database
   await tag.save();
+  const newTag = await Tag.findById(tag._id);
 
-  return res.status(200).json(tag);
+  return res.status(200).json(newTag);
 };
 
 exports.editTag = async function (req, res) {
