@@ -18,9 +18,17 @@ exports.getNotesByAccountId = async function (req, res) {
     "page",
   ])
     .sort("-updatedAt")
-    .then((notes) => {
-      if (notes) {
-        res.status(200).json(notes);
+    .then(async (notes) => {
+      let listNotes = [...notes];
+      for (let index = 0; index < listNotes.length; index++) {
+        const note = listNotes[index];
+        let book = await Book.findById(note.book);
+        if (!book || book.is_active === 0) {
+          listNotes.splice(index, 1);
+        }
+      }
+      if (listNotes) {
+        res.status(200).json(listNotes);
       } else {
         res.status(400).json({ message: "No book in bookcase found!" });
       }
@@ -41,11 +49,19 @@ exports.getNotesByAccountIdForMobile = async function (req, res) {
     "image",
     "name",
     "page",
-  ]).populate("book", "_id name totalPages author")
+  ])
+    .populate("book", "_id name totalPages author is_active")
     .sort("-updatedAt")
     .then((notes) => {
-      if (notes) {
-        res.status(200).json(notes);
+      let listNotes = [...notes];
+      for (let index = 0; index < listNotes.length; index++) {
+        const note = listNotes[index];
+        if (!note.book || note.book.is_active === 0) {
+          listNotes.splice(index, 1);
+        }
+      }
+      if (listNotes) {
+        res.status(200).json(listNotes);
       } else {
         res.status(400).json({ message: "No book in bookcase found!" });
       }
@@ -60,10 +76,13 @@ exports.getNoteDetail = async function (req, res) {
   try {
     const user = res.locals.account;
     const _id = req.params._id;
-
     let note = await Note.findOne({ _id: _id, user: user._id })
       .select("_id name book user image content page status")
-      .populate("book", ["_id", "name", "link", "key", "image"]);
+      .populate({
+        path: "book",
+        select: ["_id", "name", "link", "key", "image", "is_active"],
+        match: { is_active: 1 },
+      });
     if (note) {
       note.status = 1;
       await note.save();
@@ -86,7 +105,11 @@ exports.getNotesActiveByAccountId = async function (req, res) {
     console.log({ user });
     const notes = await Note.find({ user: user._id, status: 1 })
       .select("_id name book user image content page status")
-      .populate("book", ["_id", "name", "link", "key", "image"])
+      .populate({
+        path: "book",
+        select: ["_id", "name", "link", "key", "image", "is_active"],
+        match: { is_active: 1 },
+      })
       .sort("-updatedAt");
     if (notes) {
       return res.status(200).json(notes);
@@ -115,7 +138,10 @@ exports.postNewNote = async function (req, res) {
       });
       await note.save();
 
-      note = await Note.findOne({ _id: note._id, user: user._id }).populate("book", "_id name image totalPages")
+      note = await Note.findOne({ _id: note._id, user: user._id }).populate(
+        "book",
+        "_id name image totalPages"
+      );
 
       account.listNotes.push(note._id);
       await account.save();
@@ -228,7 +254,10 @@ exports.changeNoteInfo = async function (req, res) {
       note.name = name;
       note.image = image;
       await note.save();
-      note = await Note.findOne({ _id: note._id, user: user._id }).populate("book", "_id name image totalPages")
+      note = await Note.findOne({ _id: note._id, user: user._id }).populate(
+        "book",
+        "_id name image totalPages"
+      );
       return res.status(200).json(note);
     }
     return res.status(404).json({ message: "Not found" });

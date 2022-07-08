@@ -4,7 +4,7 @@ const { bucket, uploadFirebase } = require("../config/firebase");
 const { saveFile, readFile } = require("../handlers/fileHandler");
 const mime = require("mime-types");
 var path = require("path");
-const { v4: uuidv4 } = require("uuid");
+const { v4: uuidv4, v1: uuidv1 } = require("uuid");
 const {
   readFilePdfByUrl,
   readFilePdfByFilePath,
@@ -263,7 +263,7 @@ exports.postBook = async function (req, res) {
       const file = await readFile(pdf.tempFilePath);
       await saveFile(pdfFilename, file);
       removeTemp(pdf.tempFilePath);
-    }else{
+    } else {
       return res.status(410).json({ message: "miss Book file!" });
     }
     if (detail) {
@@ -274,13 +274,16 @@ exports.postBook = async function (req, res) {
 
     bookDesc.nameNoSign = removeVieCharacters(bookDesc.name);
     bookDesc.authorNoSign = removeVieCharacters(bookDesc.author);
+    bookDesc.descriptionNoSign = removeVieCharacters(bookDesc.description);
     //check exist book;
     const existBook = await Book.find({ nameNoSign: bookDesc.nameNoSign });
     if (existBook.length > 0) {
       return res.status(406).json({ message: "name book is exist!" });
     }
 
-    let nameForUpload = "test";
+    let nameForUpload =
+      bookDesc.nameNoSign.replace(/\s/g, "-") + "_ver" + uuidv1();
+    console.log({ nameForUpload });
     let passwordForEncrypting = uuidv4();
 
     if (thumbnail) {
@@ -293,7 +296,7 @@ exports.postBook = async function (req, res) {
       console.log(">> post " + thumbnailFilename + " into firebase");
       const url = await uploadFirebase(
         thumbnailFilename,
-        "books/intro/" + nameForUpload
+        "books/images/" + nameForUpload
       );
       console.log({ thumbnailUrl: url });
       bookDesc.image = url;
@@ -339,7 +342,7 @@ exports.postBook = async function (req, res) {
       if (thumbnailPath) {
         const thumbnailUrl = await uploadFirebase(
           thumbnailPath,
-          "books/images/test"
+          "books/images/" + nameForUpload
         );
         console.log({ thumbnailUrl });
         bookDesc.image = thumbnailUrl;

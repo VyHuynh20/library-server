@@ -54,10 +54,10 @@ exports.listBookInBookcase = async function (req, res) {
   Bookcase.find({ user: user._id }, ["user", "book", "progress"])
     .populate({
       path: "book",
-      select: ["_id", "name", "authors", "tags", "image"],
+      select: ["_id", "name", "authors", "tags", "image", "is_active"],
+      match: { is_active: 1 },
       populate: { path: "tags" },
     })
-
     .then((bookcase) => {
       res.status(200).json(bookcase);
     })
