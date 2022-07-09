@@ -234,6 +234,43 @@ exports.modifyUser = async function (req, res) {
   }
 };
 
+exports.createUser = async function (req, res) {
+  console.log(req.body);
+  try {
+    const { name, avatar, nickname, faculty, gender, email, dob } = req.body;
+    let exitUser = await Account.findOne({ email: email });
+    if (exitUser) {
+      return res.status(406).json({ message: "Email is exit!" });
+    }
+    let user = new Account();
+    user.nickname = nickname;
+    user.faculty = faculty;
+    user.name = name;
+    user.email = email;
+    user.avatar = avatar;
+    user.dob = dob;
+    user.gender = gender;
+    await user.save();
+    return res.status(200).json(user);
+  } catch (err) {
+    res.status(403).json({ message: "Bad request" });
+  }
+};
+
+exports.checkExistEmailUser = async function (req, res) {
+  try {
+    const { email } = req.body;
+    let exitUser = await Account.findOne({ email: email });
+    if (exitUser) {
+      return res.status(406).json({ message: "Email is exit!" });
+    } else {
+      return res.status(200).json({ message: "not exist" });
+    }
+  } catch (e) {
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 exports.checkExistBookName = async function (req, res) {
   try {
     const { name } = req.body;

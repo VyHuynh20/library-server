@@ -49,6 +49,12 @@ router.get("/getAllUser", authAdmin, adminController.getAllUsers);
 router.get("/getUserDetail/:userId", authAdmin, adminController.getUserDetail);
 router.put("/banUser/:userId", authAdmin, adminController.banUser);
 router.put("/modifyUser", authAdmin, adminController.modifyUser);
+router.put("/createUser", authAdmin, adminController.createUser);
+router.post(
+  "/checkExistEmailUser",
+  authAdmin,
+  adminController.checkExistEmailUser
+);
 
 //NOTE: Category manage
 router.get("/getAllCategories", authAdmin, adminController.getAllCategories);
