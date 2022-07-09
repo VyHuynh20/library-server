@@ -561,7 +561,7 @@ exports.checkExistCategoryName = async function (req, res) {
     console.log({ nameNoSign });
     if (name) {
       const existCategory = await Category.find({ nameNoSign: nameNoSign });
-      console.log({existCategory});
+      console.log({ existCategory });
       if (existCategory.length > 0) {
         return res.status(406).json({ message: "name category is exist!" });
       } else {
@@ -582,8 +582,9 @@ exports.createCategory = async function (req, res) {
       res.status(400).send({ message: "Content can not be empty!" });
       return;
     }
-    const { name, quote, thumbnail, color, tags } = req.body;
+    let { name, quote, thumbnail, color, tags } = req.body;
 
+    name = name.toUpperCase();
     var nameNoSign = removeVieCharacters(name);
     const existCategory = await Category.find({ nameNoSign: nameNoSign });
     if (existCategory.length > 0) {
@@ -595,7 +596,6 @@ exports.createCategory = async function (req, res) {
       quote,
       nameNoSign,
       thumbnail,
-      is_active,
       color,
       tags,
     });
@@ -603,7 +603,7 @@ exports.createCategory = async function (req, res) {
     // save tag in the database
     await category.save();
 
-    category = await Category.findById(req.params.categoryId, [
+    category = await Category.findById(category._id, [
       "_id",
       "name",
       "quote",
@@ -626,7 +626,8 @@ exports.createCategory = async function (req, res) {
 
 exports.editCategory = async function (req, res) {
   try {
-    const { name, quote, thumbnail, color, tags } = req.body;
+    let { name, quote, thumbnail, color, tags } = req.body;
+    name = name.toUpperCase();
     if (!req.body) {
       return res
         .status(400)
