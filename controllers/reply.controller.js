@@ -7,7 +7,7 @@ const moment = require("moment");
 exports.getReply = async function (req, res) {
   try {
     const _id = req.params._id;
-    let reply = await Reply.findById(_id)
+    let reply = await Reply.findOne({ _id, status: 1 })
       .select(
         "_id commentId content createdAt user totalLike totalDislike liked disliked"
       )
@@ -42,7 +42,7 @@ exports.getReply = async function (req, res) {
 
 exports.getRepliesByCommentId = async function (req, res) {
   const commentId = req.params.commentId;
-  let replies = await Reply.find({ commentId: commentId })
+  let replies = await Reply.find({ commentId: commentId, status: 1 })
     .populate({
       path: "user",
       select: "_id nickname name email",

@@ -92,7 +92,7 @@ const getCommentUtils = async function (_id) {
 
 exports.getCommentsByBookId = async function (req, res) {
   const bookId = req.params.bookId;
-  let comments = await Comment.find({ book: bookId }, [
+  let comments = await Comment.find({ book: bookId, status: 1 }, [
     "_id",
     "book",
     "content",
@@ -105,7 +105,10 @@ exports.getCommentsByBookId = async function (req, res) {
     "replies",
     "type",
   ])
-    .populate("user", ["_id", "avatar", "name", "hoa", "email", "nickname"])
+    .populate({
+      path: "user",
+      select: ["_id", "avatar", "name", "hoa", "email", "nickname"],
+    })
     .sort("-createdAt");
 
   let account;

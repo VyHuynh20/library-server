@@ -81,4 +81,11 @@ router.get("/userStatistical", adminController.userStatistical);
 router.get("/userByFaculty", adminController.userByFaculty);
 router.get("/userByMonth", adminController.userByMonth);
 
+//NOTE: forum
+router.put(
+  "/banCommentOrReply/:Id",
+  authAdmin,
+  adminController.banCommentOrReply
+);
+
 module.exports = router;

@@ -18,6 +18,7 @@ const Admin = require("../models/Admin");
 const Book = require("../models/Book");
 const Category = require("../models/Category");
 const Comment = require("../models/Comment");
+const Reply = require("../models/Reply");
 const Tag = require("../models/Tag");
 const Transaction = require("../models/Transaction");
 
@@ -402,110 +403,117 @@ exports.postBook = async function (req, res) {
 
 exports.putBook = async function (req, res) {
   try {
-    const {
-      name,
-      author,
-      tags,
-      description,
-      image,
-      quote,
-      price,
-      link,
-      linkIntro,
-      key,
-      totalPages,
-    } = req.body;
-
-    const { bookId } = req.params;
-
-    if (bookId !== "new") {
-      let book = await Book.findById(bookId);
-      if (book) {
-        book.name = name;
-        if (name) {
-          book.nameNoSign = removeVieCharacters(name);
-        }
-        book.author = author;
-        if (author) {
-          book.authorNoSign = removeVieCharacters(author);
-        }
-        book.tags = tags;
-        book.description = description;
-        if (description) {
-          book.descriptionNoSign = removeVieCharacters(description);
-        }
-        book.image = image;
-        book.quote = quote;
-        book.price = price;
-        book.link = link;
-        book.linkIntro = linkIntro;
-        book.key = key;
-        book.totalPages = totalPages;
-
-        await book.save();
-        book = await Book.findById(book._id, [
-          "_id",
-          "name",
-          "key",
-          "image",
-          "price",
-          "description",
-          "authors",
-          "quote",
-          "tags",
-          "totalPages",
-          "linkIntro",
-          "link",
-          "is_active",
-        ]).populate("tags", ["_id", "name"]);
-        return res.status(200).json(book);
-      }
-      return res.status(404).json({ message: "Not Found" });
-    } else {
-      let book = new Book();
-      book.name = name;
-      if (name) {
-        book.nameNoSign = removeVieCharacters(name);
-      }
-      book.author = author;
-      if (author) {
-        book.authorNoSign = removeVieCharacters(author);
-      }
-      book.tags = tags;
-      book.description = description;
-      if (description) {
-        book.descriptionNoSign = removeVieCharacters(description);
-      }
-      book.image = image;
-      book.quote = quote;
-      book.price = price;
-      book.link = link;
-      book.linkIntro = linkIntro;
-      book.key = key;
-      book.totalPages = totalPages;
-
-      await book.save();
-      book = await Book.findById(book._id, [
-        "_id",
-        "name",
-        "key",
-        "image",
-        "price",
-        "description",
-        "authors",
-        "quote",
-        "tags",
-        "totalPages",
-        "linkIntro",
-        "link",
-        "is_active",
-      ]).populate("tags", ["_id", "name"]);
-
-      return res.status(200).json(book);
+    const { detail } = req.body;
+    let bookDesc;
+    let pdfFilename;
+    bookDesc = JSON.parse(detail);
+    bookDesc.nameNoSign = removeVieCharacters(bookDesc.name);
+    bookDesc.authorNoSign = removeVieCharacters(bookDesc.author);
+    bookDesc.descriptionNoSign = removeVieCharacters(bookDesc.description);
+    //check exist book;
+    const existBook = await Book.findOne({ nameNoSign: bookDesc.nameNoSign });
+    if (existBook && existBook._id.toString() !== bookDesc._id) {
+      return res.status(406).json({ message: "name book is exist!" });
     }
+
+    if (req.files) {
+      let nameForUpload =
+        bookDesc.nameNoSign.replace(/\s/g, "-") + "_ver" + uuidv1();
+      console.log({ nameForUpload });
+      let passwordForEncrypting = uuidv4();
+      console.log({ bookDesc });
+      const { thumbnail, pdf } = req.files;
+      if (pdf) {
+        pdfFilename = "pdf/src/test.pdf";
+        const file = await readFile(pdf.tempFilePath);
+        await saveFile(pdfFilename, file);
+        removeTemp(pdf.tempFilePath);
+
+        const { thumbnailPath, docPath, introPath, totalPages } =
+          await readFilePdfByFilePath(
+            pdfFilename,
+            bookDesc.key,
+            bookDesc.image === "" && !thumbnail,
+            passwordForEncrypting
+          );
+        if (thumbnailPath) {
+          const thumbnailUrl = await uploadFirebase(
+            thumbnailPath,
+            "books/images/" + nameForUpload
+          );
+          console.log({ thumbnailUrl });
+          bookDesc.image = thumbnailUrl;
+        } else {
+          return res.status(407).json({ message: "Create thumbnail failure" });
+        }
+        if (introPath) {
+          const introUrl = await uploadFirebase(
+            introPath,
+            "books/intro/" + nameForUpload
+          );
+          console.log({ introUrl });
+          bookDesc.linkIntro = introUrl;
+        } else {
+          return res.status(407).json({ message: "Create intro failure" });
+        }
+        if (docPath) {
+          const docUrl = await uploadFirebase(
+            docPath,
+            "books/pdf/" + nameForUpload
+          );
+          console.log({ docUrl });
+          bookDesc.link = docUrl;
+          bookDesc.key = passwordForEncrypting;
+        } else {
+          return res
+            .status(408)
+            .json({ message: "Create encrypting Pdf failure" });
+        }
+        bookDesc.totalPages = totalPages;
+      }
+      if (thumbnail) {
+        const thumbnailFilename =
+          "pdf/src/thumbnail" + path.extname(thumbnail.name);
+        console.log(">> save " + thumbnailFilename);
+        const file = await readFile(thumbnail.tempFilePath);
+        await saveFile(thumbnailFilename, file);
+        removeTemp(thumbnail.tempFilePath);
+        console.log(">> post " + thumbnailFilename + " into firebase");
+        const url = await uploadFirebase(
+          thumbnailFilename,
+          "books/images/" + nameForUpload
+        );
+        console.log({ thumbnailUrl: url });
+        bookDesc.image = url;
+      }
+    }
+
+    //create new Book
+    let book = await Book.findById(bookDesc._id);
+    book.name = bookDesc.name;
+    book.author = bookDesc.author;
+    book.nameNoSign = bookDesc.nameNoSign;
+    book.authorNoSign = bookDesc.authorNoSign;
+    book.quote = bookDesc.quote;
+    book.description = bookDesc.description;
+    book.price = bookDesc.price;
+    book.key = bookDesc.key;
+    book.tags = bookDesc.tags;
+    book.image = bookDesc.image;
+    book.link = bookDesc.link;
+    book.linkIntro = bookDesc.linkIntro;
+    book.totalPages = bookDesc.totalPages;
+
+    await book.save();
+    book = await Book.findById(book._id).populate({
+      path: "tags",
+      select: "_id name",
+    });
+
+    return res.status(200).json(book);
   } catch (err) {
     console.log({ err });
-    res.status(500).json({ message: "Something went wrong" });
+    res.status(403).json({ message: "Bad request" });
   }
 };
 
@@ -985,7 +993,9 @@ exports.booksByTags = async function (req, res) {
 
 exports.hoaByMonth = async function (req, res) {
   try {
-    const transactions = await Transaction.find().sort("-createdAt");
+    const transactions = await Transaction.find({ type: "buy-book" }).sort(
+      "-createdAt"
+    );
     const today = new Date();
     const thisYear = today.getFullYear();
     const lastYear = thisYear - 1;
@@ -1000,15 +1010,17 @@ exports.hoaByMonth = async function (req, res) {
       data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     };
 
+    console.log({ transactions });
+
     transactions.forEach((element) => {
       if (element.createdAt.getFullYear() === thisYear) {
-        if (element.hoa > 0) {
-          hoaByMonthThisYear.data[element.createdAt.getMonth()] += element.hoa;
-        }
+        hoaByMonthThisYear.data[element.createdAt.getMonth()] += Math.abs(
+          element.hoa
+        );
       } else if (element.createdAt.getFullYear() === lastYear) {
-        if (element.hoa > 0) {
-          hoaByMonthLastYear.data[element.createdAt.getMonth()] += element.hoa;
-        }
+        hoaByMonthLastYear.data[element.createdAt.getMonth()] += Math.abs(
+          element.hoa
+        );
       } else {
         return res.status(200).json({ hoaByMonthLastYear, hoaByMonthThisYear });
       }
@@ -1126,5 +1138,29 @@ exports.userByMonth = async function (req, res) {
   } catch (err) {
     console.log({ err });
     res.status(500).json({ message: err || "Something went wrong" });
+  }
+};
+
+exports.banCommentOrReply = async function (req, res) {
+  const { status } = req.body;
+  try {
+    let comment = await Comment.findById(req.params.Id);
+    if (comment) {
+      comment.status = status;
+      await comment.save();
+      return res.status(200).json({ status, _id: comment._id });
+    } else {
+      console.log("helo");
+      let reply = await Reply.findById(req.params.Id);
+      console.log({ reply });
+      if (reply) {
+        reply.status = status;
+        await reply.save();
+        return res.status(200).json({ status, _id: reply._id });
+      }
+    }
+    return res.status(404).json({ message: "Not Found" });
+  } catch (err) {
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
