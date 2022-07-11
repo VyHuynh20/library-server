@@ -43,6 +43,7 @@ const commentRoute = require("./routes/comment");
 const replyRoute = require("./routes/reply");
 const transactionRoute = require("./routes/transaction");
 const adminRoute = require("./routes/admin");
+const pomodoroRoute = require("./routes/pomodoro");
 
 // Routes
 app.get("/", (req, res) => {
@@ -63,6 +64,7 @@ app.use("/comments", commentRoute);
 app.use("/replies", replyRoute);
 app.use("/transactions", transactionRoute);
 app.use("/admin", adminRoute);
+app.use("/pomodoro", pomodoroRoute);
 
 // Set up environment
 app.listen(process.env.PORT, () => {
