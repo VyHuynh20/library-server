@@ -56,7 +56,7 @@ exports.detailBook = async function (req, res) {
     let react = 0;
     let isHad = false;
     //is_active: 1
-    let book = await Book.findOne({ _id: req.params.bookId }, [
+    let book = await Book.findOne({ _id: req.params.bookId, is_active: 1 }, [
       "_id",
       "name",
       "image",
@@ -78,23 +78,27 @@ exports.detailBook = async function (req, res) {
       select: "_id name",
     });
 
-    let account = await checkUser(req);
+    if (book) {
+      let account = await checkUser(req);
 
-    if (account) {
-      if (book.liked && book.liked.includes(account._id)) {
-        react = 1;
+      if (account) {
+        if (book.liked && book.liked.includes(account._id)) {
+          react = 1;
+        }
+        if (book.disliked && book.disliked.includes(account._id)) {
+          react = -1;
+        }
+        if (account.listBooks.includes(book._id)) {
+          isHad = true;
+        }
       }
-      if (book.disliked && book.disliked.includes(account._id)) {
-        react = -1;
-      }
-      if (account.listBooks.includes(book._id)) {
-        isHad = true;
-      }
+
+      book._doc["react"] = react;
+      book._doc["isHad"] = isHad;
+      return res.status(200).json(book);
+    } else {
+      return res.status(404).json({ message: "not found" });
     }
-
-    book._doc["react"] = react;
-    book._doc["isHad"] = isHad;
-    return res.status(200).json(book);
   } catch (err) {
     return res.status(400).json({ error: "Something went wrong!" });
   }
@@ -357,7 +361,7 @@ exports.getBooksTrending = async function (req, res) {
     });
 
     popularityBooks.sort((a, b) => b.rate - a.rate);
-    if(popularityBooks.length > 10){
+    if (popularityBooks.length > 10) {
       popularityBooks = popularityBooks.slice(0, 10);
     }
 
@@ -366,3 +370,147 @@ exports.getBooksTrending = async function (req, res) {
     return res.status(400).json({ error: "Something went wrong!" });
   }
 };
+
+exports.recommendBook = async function (req, res) {
+  try {
+    let user = await checkUser(req);
+    let books = await Book.find({ is_active: 1 }, [
+      "_id",
+      "name",
+      "author",
+      "quote",
+      "tags",
+      "image",
+      "price",
+      "totalLike",
+      "totalDislike",
+      "totalRead",
+    ]).populate("tags", ["_id", "name"]);
+    let listBookForRandom = [];
+    if (user) {
+      user = await Account.findById(user._id).populate("listBooks", "tags");
+      let tags = [];
+      let booksIdOfUser = [];
+      let booksOfUser = user.listBooks;
+      booksOfUser.forEach((b) => {
+        booksIdOfUser.push(b._id.toString());
+        b.tags.forEach((t) => {
+          if (!tags.includes(t.toString())) {
+            tags.push(t.toString());
+          }
+        });
+      });
+      listBookForRandom = await Book.find(
+        {
+          tags: { $in: tags },
+          _id: { $nin: booksIdOfUser },
+          is_active: 1,
+        },
+        [
+          "_id",
+          "name",
+          "author",
+          "quote",
+          "tags",
+          "image",
+          "price",
+          "totalLike",
+          "totalDislike",
+          "totalRead",
+        ]
+      ).populate("tags", ["_id", "name"]);
+      let otherBook = await Book.find({ tags: { $nin: tags }, is_active: 1 }, [
+        "_id",
+        "name",
+        "author",
+        "quote",
+        "tags",
+        "image",
+        "price",
+        "totalLike",
+        "totalDislike",
+        "totalRead",
+      ]).populate("tags", ["_id", "name"]);
+      listBookForRandom = [...listBookForRandom, ...sample(otherBook, 10)];
+    } else {
+      listBookForRandom = books;
+    }
+
+    let finalBooks = [];
+    if (listBookForRandom.length > 0) {
+      finalBooks = sample(listBookForRandom, 10);
+    } else {
+      finalBooks = sample(books, 10);
+    }
+    return res.status(200).json(finalBooks);
+  } catch (err) {
+    return res.status(404).json({ error: "Something went wrong!" });
+  }
+};
+
+function sample(population, k) {
+  /*
+        Chooses k unique random elements from a population sequence or set.
+
+        Returns a new list containing elements from the population while
+        leaving the original population unchanged.  The resulting list is
+        in selection order so that all sub-slices will also be valid random
+        samples.  This allows raffle winners (the sample) to be partitioned
+        into grand prize and second place winners (the subslices).
+
+        Members of the population need not be hashable or unique.  If the
+        population contains repeats, then each occurrence is a possible
+        selection in the sample.
+
+        To choose a sample in a range of integers, use range as an argument.
+        This is especially fast and space efficient for sampling from a
+        large population:   sample(range(10000000), 60)
+
+        Sampling without replacement entails tracking either potential
+        selections (the pool) in a list or previous selections in a set.
+
+        When the number of selections is small compared to the
+        population, then tracking selections is efficient, requiring
+        only a small set and an occasional reselection.  For
+        a larger number of selections, the pool tracking method is
+        preferred since the list takes less space than the
+        set and it doesn't suffer from frequent reselections.
+    */
+
+  if (!Array.isArray(population))
+    throw new TypeError("Population must be an array.");
+  var n = population.length;
+  if (k < 0)
+    throw new RangeError("Sample larger than population or is negative");
+  if (k > n) return population;
+
+  var result = new Array(k);
+  var setsize = 21; // size of a small set minus size of an empty list
+
+  if (k > 5) setsize += Math.pow(4, Math.ceil(Math.log(k * 3) / Math.log(4)));
+
+  console.log(n, setsize);
+
+  if (n <= setsize) {
+    // An n-length list is smaller than a k-length set
+    var pool = population.slice();
+    for (var i = 0; i < k; i++) {
+      // invariant:  non-selected at [0,n-i)
+      var j = (Math.random() * (n - i)) | 0;
+      result[i] = pool[j];
+      pool[j] = pool[n - i - 1]; // move non-selected item into vacancy
+    }
+  } else {
+    var selected = new Set();
+    for (var i = 0; i < k; i++) {
+      var j = (Math.random() * n) | 0;
+      while (selected.has(j)) {
+        j = (Math.random() * n) | 0;
+      }
+      selected.add(j);
+      result[i] = population[j];
+    }
+  }
+
+  return result;
+}

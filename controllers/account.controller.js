@@ -58,7 +58,7 @@ exports.loginGoogle = async function (req, res) {
                     fullName: name,
                     avatarGoogle: picture,
                     avatar: picture,
-                    cover: picture
+                    cover: picture,
                   });
                   console.log(newAccount);
 
@@ -93,13 +93,13 @@ exports.loginGoogle = async function (req, res) {
           }
         })
         .catch((e) => {
-          res.status(400).json({message: e.message});
+          res.status(400).json({ message: e.message });
         });
     } catch (error) {
-      res.status(400).json({message: "bad request"});
+      res.status(400).json({ message: "bad request" });
     }
   } else {
-    res.status(400).json({message: "bad request"});
+    res.status(400).json({ message: "bad request" });
   }
 };
 
@@ -177,6 +177,7 @@ exports.getUserInfoForForum = async function (req, res) {
   );
   if (user) {
     user._doc["isRead"] = user.listBooks.includes(bookId);
+    user._doc["totalBooks"] = user.listBooks.length;
     return res.status(200).json(user);
   }
   return res.status(400).json("something wrong");
