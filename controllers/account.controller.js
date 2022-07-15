@@ -7,7 +7,7 @@ const client = new OAuth2Client(
 );
 const Account = require("../models/Account");
 
-exports.loginGoogle = async function (req, res) {
+exports.loginGoogle_Old = async function (req, res) {
   const { tokenId } = req.body;
   console.log(tokenId);
   if (tokenId) {
@@ -90,6 +90,73 @@ exports.loginGoogle = async function (req, res) {
                 }
               }
             });
+          }
+        })
+        .catch((e) => {
+          res.status(400).json({ message: e.message });
+        });
+    } catch (error) {
+      res.status(400).json({ message: "bad request" });
+    }
+  } else {
+    res.status(400).json({ message: "bad request" });
+  }
+};
+
+exports.loginGoogle = async function (req, res) {
+  const { tokenId } = req.body;
+  console.log({ tokenId });
+  if (tokenId) {
+    try {
+      client
+        .verifyIdToken({
+          idToken: tokenId,
+          audience:
+            "168686532840-8f6as6ppblu170r1v0f337cvpq29l43f.apps.googleusercontent.com",
+        })
+        .then(async (response) => {
+          const { email_verified, email, name, picture } = response.payload;
+          if (email_verified) {
+            let account = await Account.findOne({ email });
+            console.log({ account });
+            if (account) {
+              if (account.is_banned) {
+                return res
+                  .status(406)
+                  .json({ message: "Tài khoản đã bị khóa!" });
+              }
+
+              const token = jwt.sign(
+                { _id: account._id },
+                process.env.JWT_SECRET,
+                { expiresIn: "24h" }
+              );
+
+              if (picture) {
+                if (!account.avatarGoogle || account.avatarGoogle === "")
+                  account.avatarGoogle = picture;
+                if (!account.avatar || account.avatar === "")
+                  account.avatar = picture;
+                if (!account.cover || account.cover === "")
+                  account.cover = picture;
+                await account.save();
+              }
+
+              const { _id, name, email, avatar, hoa, cover } = account;
+
+              res.cookie("access_token", token, {
+                maxAge: 24 * 60 * 60 * 100,
+                httpOnly: true,
+                // secure: true,
+                // sameSite: "none
+              });
+
+              res.status(200).json({
+                user: { _id, name, email, avatar, hoa, cover },
+              });
+            } else {
+              res.status(404).json({ message: "email isn't registered" });
+            }
           }
         })
         .catch((e) => {
