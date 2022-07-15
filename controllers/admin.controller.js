@@ -41,8 +41,8 @@ exports.login = async function (req, res) {
         res.cookie("access_token_admin", token, {
           maxAge: 24 * 60 * 60 * 1000,
           httpOnly: true,
-          // secure: true,
-          // sameSite: "none
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
         });
         res.status(200).json({ admin });
       } else {
@@ -63,8 +63,8 @@ exports.logout = async function (req, res) {
     .cookie("access_token_admin", "", {
       maxAge: 0,
       httpOnly: true,
-      // secure: true,
-      // sameSite: "none
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
     })
     .status(200)
     .json("logout success");

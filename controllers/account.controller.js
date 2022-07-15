@@ -147,8 +147,9 @@ exports.loginGoogle = async function (req, res) {
               res.cookie("access_token", token, {
                 maxAge: 24 * 60 * 60 * 100,
                 httpOnly: true,
-                // secure: true,
-                // sameSite: "none
+                secure: process.env.NODE_ENV === "production",
+                sameSite:
+                  process.env.NODE_ENV === "production" ? "None" : "Lax",
               });
 
               res.status(200).json({
