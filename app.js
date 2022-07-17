@@ -15,7 +15,7 @@ const app = express();
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:5000"], //Chan tat ca cac domain khac ngoai domain nay
+    origin: ["http://localhost:3000", "http://localhost:5000", "https://library-online-kappa.vercel.app"], //Chan tat ca cac domain khac ngoai domain nay
     credentials: true, //Để bật cookie HTTP qua CORS
   })
 );
